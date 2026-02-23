@@ -483,14 +483,29 @@ async function connectSubBots() {
 }
 (async () => {
     global.conns = [];
-    try {
-        conn.ev.on('connection.update', connectionUpdate);
-        conn.ev.on('creds.update', saveCreds);
-        console.log(chalk.bold.magenta(`⭑⭒━━━✦❘༻☾⋆⁺₊✧ varebot connesso correttamente ✧₊⁺⋆☽༺❘✦━━━⭒⭑`));
-        await connectSubBots();
-    } catch (error) {
-        console.error(chalk.bold.bgRedBright(`🥀 Errore nell'avvio del bot: `, error));
-    }
+
+try {
+    conn.ev.on('connection.update', connectionUpdate);
+    conn.ev.on('creds.update', saveCreds);
+
+    console.log(
+        chalk.hex('#00CED1').bold(
+            `\n⭑ ✨ 𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓 CONNESSO ✨⭑\n`
+        )
+    );
+
+    await connectSubBots();
+
+} catch (error) {
+
+    console.error(
+        chalk.hex('#E74C3C').bold(
+            `\n❌ ERRORE NELL'AVVIO DI 𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓 ❌\n`
+        ),
+        chalk.hex('#ECF0F1')(error),
+        '\n'
+    );
+}
 })();
 let isInit = true;
 let handler = await import('./handler.js');
