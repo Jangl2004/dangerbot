@@ -445,9 +445,7 @@ async function connectSubBots() {
 );
 
 if (subBotFolders.length === 0) {
-    console.log(
-        chalk.hex('#00CED1').bold('🔮 Nessun bot collegato.')
-    );
+    console.log(chalk.hex('#00CED1').bold('🔮 Nessun bot collegato.'));
     return;
 }
 
@@ -456,8 +454,7 @@ const botPromises = subBotFolders.map(async (folder) => {
 
     if (existsSync(join(subAuthFile, 'creds.json'))) {
         try {
-            const { state: subState, saveCreds: subSaveCreds } =
-                await useMultiFileAuthState(subAuthFile);
+            const { state: subState, saveCreds: subSaveCreds } = await useMultiFileAuthState(subAuthFile);
 
             const subConn = makeWASocket({
                 ...connectionOptions,
@@ -470,25 +467,14 @@ const botPromises = subBotFolders.map(async (folder) => {
             subConn.ev.on('creds.update', subSaveCreds);
             subConn.ev.on('connection.update', connectionUpdate);
 
-            console.log(
-                chalk.hex('#2ECC71').bold(`✅ Sub-Bot "${folder}" connesso`)
-            );
-
+            console.log(chalk.hex('#2ECC71').bold(`✅ Sub-Bot "${folder}" connesso`));
             return subConn;
 
         } catch (err) {
-
-            console.log(
-                chalk.hex('#E74C3C').bold(
-                    `❌ Errore connessione Sub-Bot ${folder}: `
-                ),
-                chalk.hex('#ECF0F1')(err.message)
-            );
-
+            console.log(chalk.hex('#E74C3C').bold(`❌ Errore Sub-Bot "${folder}":`), chalk.hex('#ECF0F1')(err.message));
             return null;
         }
     }
-
     return null;
 });
 
@@ -496,20 +482,9 @@ const bots = await Promise.all(botPromises);
 global.conns = bots.filter(Boolean);
 
 if (global.conns.length > 0) {
-
-    console.log(
-        chalk.hex('#00BFFF').bold(
-            `\n🌐 ${global.conns.length} Sub-Bot connessi con successo a 𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓\n`
-        )
-    );
-
+    console.log(chalk.hex('#00BFFF').bold(`🌐 ${global.conns.length} Sub-Bot connessi con successo a 𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓\n`));
 } else {
-
-    console.log(
-        chalk.hex('#F1C40F').bold(
-            '⚠️ Nessun Sub-Bot è riuscito a connettersi.'
-        )
-    );
+    console.log(chalk.hex('#F1C40F').bold('⚠️ Nessun Sub-Bot è riuscito a connettersi.'));
 }
 (async () => {
     global.conns = [];
