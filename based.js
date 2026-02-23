@@ -347,7 +347,6 @@ nexusbot.forEach((line, i) => {
 });
 
 console.log(chalk.hex('#2ECC71').bold('\n✨ 𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓 ONLINE ✨\n'));
-
             });
             global.isLogoPrinted = true;
         }
