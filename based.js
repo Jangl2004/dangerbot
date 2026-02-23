@@ -441,45 +441,75 @@ async function connectSubBots() {
     }
     try {
         const subBotFolders = readdirSync(subBotDirectory).filter(file =>
-            statSync(join(subBotDirectory, file)).isDirectory()
-        );
-        if (subBotFolders.length === 0) {
-            console.log(chalk.bold.magenta('- 🌑 | Nessun subbot collegato'));
-            return;
-        }
-        const botPromises = subBotFolders.map(async (folder) => {
-            const subAuthFile = join(subBotDirectory, folder);
-            if (existsSync(join(subAuthFile, 'creds.json'))) {
-                try {
-                    const { state: subState, saveCreds: subSaveCreds } = await useMultiFileAuthState(subAuthFile);
-                    const subConn = makeWASocket({
-                        ...connectionOptions,
-                        auth: {
-                            creds: subState.creds,
-                            keys: makeCacheableSignalKeyStore(subState.keys, logger),
-                        },
-                    });
-                   
-                    subConn.ev.on('creds.update', subSaveCreds);
-                    subConn.ev.on('connection.update', connectionUpdate);
-                    return subConn;
-                } catch (err) {
-                    console.log(chalk.bold.red(`❌ Errore nella connessione del Sub-Bot ${folder}:`, err.message));
-                    return null;
-                }
-            }
+    statSync(join(subBotDirectory, file)).isDirectory()
+);
+
+if (subBotFolders.length === 0) {
+    console.log(
+        chalk.hex('#00CED1').bold('🔮 Nessun bot collegato.')
+    );
+    return;
+}
+
+const botPromises = subBotFolders.map(async (folder) => {
+    const subAuthFile = join(subBotDirectory, folder);
+
+    if (existsSync(join(subAuthFile, 'creds.json'))) {
+        try {
+            const { state: subState, saveCreds: subSaveCreds } =
+                await useMultiFileAuthState(subAuthFile);
+
+            const subConn = makeWASocket({
+                ...connectionOptions,
+                auth: {
+                    creds: subState.creds,
+                    keys: makeCacheableSignalKeyStore(subState.keys, logger),
+                },
+            });
+
+            subConn.ev.on('creds.update', subSaveCreds);
+            subConn.ev.on('connection.update', connectionUpdate);
+
+            console.log(
+                chalk.hex('#2ECC71').bold(`✅ Sub-Bot "${folder}" connesso`)
+            );
+
+            return subConn;
+
+        } catch (err) {
+
+            console.log(
+                chalk.hex('#E74C3C').bold(
+                    `❌ Errore connessione Sub-Bot ${folder}: `
+                ),
+                chalk.hex('#ECF0F1')(err.message)
+            );
+
             return null;
-        });
-        const bots = await Promise.all(botPromises);
-        global.conns = bots.filter(Boolean);
-        if (global.conns.length > 0) {
-            console.log(chalk.bold.magentaBright(`🌙 ${global.conns.length} Sub-Bot si sono connessi con successo.`));
-        } else {
-            console.log(chalk.bold.yellow('⚠️ Nessun Sub-Bot è riuscito a connettersi.'));
         }
-    } catch (err) {
-        console.log(chalk.bold.red('❌ Errore generale nella connessione dei Sub-Bot:', err.message));
     }
+
+    return null;
+});
+
+const bots = await Promise.all(botPromises);
+global.conns = bots.filter(Boolean);
+
+if (global.conns.length > 0) {
+
+    console.log(
+        chalk.hex('#00BFFF').bold(
+            `\n🌐 ${global.conns.length} Sub-Bot connessi con successo a 𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓\n`
+        )
+    );
+
+} else {
+
+    console.log(
+        chalk.hex('#F1C40F').bold(
+            '⚠️ Nessun Sub-Bot è riuscito a connettersi.'
+        )
+    );
 }
 (async () => {
     global.conns = [];
