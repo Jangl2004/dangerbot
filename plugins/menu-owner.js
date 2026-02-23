@@ -14,6 +14,7 @@ const handler = async (message, { conn, usedPrefix = '.' }) => {
 🤖 𝐆𝐄𝐒𝐓𝐈𝐎𝐍𝐄 𝐁𝐎𝐓
 ➤ ${usedPrefix}join + link ⚠️ Fai entrare il bot
 ➤ ${usedPrefix}reimpostagp 💾 reimposta link gruppo 
+➤ ${usedPrefix}tuttigp 🚨 Il bot manda un messaggio in tutti i gp dove si trova 
 ➤ ${usedPrefix}getid (link gp) 🆔 il bot ti da l'id di quel gruppo 
 ➤ ${usedPrefix}out 👋 Fai uscire il bot
 ➤ ${usedPrefix}aggiorna 🌐 Aggiorna bot
