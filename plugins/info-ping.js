@@ -4,8 +4,6 @@ import os from 'os';
 import { performance } from 'perf_hooks';
 
 let handler = async (m, { conn, usedPrefix }) => {
-
-voglio togliere i bottoni, riscrivimi il plugin tutto uguale senza bottoni
   try {
     const uptimeMs = process.uptime() * 1000;
     const uptimeStr = clockString(uptimeMs);
@@ -36,7 +34,8 @@ voglio togliere i bottoni, riscrivimi il plugin tutto uguale senza bottoni
       year: 'numeric',
     });
 
-    const textMsg =⟦ 𝐒𝐓𝐀𝐓𝐎 𝐁𝐎𝐓 ⟧
+    const textMsg =`
+⟦ 𝐒𝐓𝐀𝐓𝐎 𝐁𝐎𝐓 ⟧
 
 ╭───────────────
 │ ⚡ *_Ping_*     : ${speed} ms
@@ -46,7 +45,7 @@ voglio togliere i bottoni, riscrivimi il plugin tutto uguale senza bottoni
 ╰───────────────
 
 🟢 *_Tutti i sistemi attivi_*
-.trim();
+`.trim();
 
     await conn.sendMessage(m.chat, {
       text: textMsg,
