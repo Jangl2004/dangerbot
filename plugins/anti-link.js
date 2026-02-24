@@ -1,4 +1,3 @@
-
 import { downloadContentFromMessage } from '@realvare/baileys'
 import ffmpeg from 'fluent-ffmpeg'
 import { createWriteStream, readFile } from 'fs'
@@ -12,7 +11,6 @@ import { FormData } from 'formdata-node'
 
 const WHATSAPP_GROUP_REGEX = /\bchat\.whatsapp\.com\/([0-9A-Za-z]{20,24})/i
 const WHATSAPP_CHANNEL_REGEX = /whatsapp\.com\/channel\/([0-9A-Za-z]{20,24})/i
-const GENERAL_URL_REGEX = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&=]*)/gi
 
 const SHORT_URL_DOMAINS = [
   'bit.ly','tinyurl.com','t.co','short.link','shorturl.at',
@@ -78,17 +76,17 @@ Rendimi amministratore per eseguire il protocollo.
   }
 
   try {
+    await conn.sendMessage(m.chat, { delete: m.key })
+  } catch {}
+
+  try {
     await conn.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
-    await conn.sendMessage(m.chat, {
-      text: fullMessage,
-      mentions: [m.sender]
-    })
-  } catch {
-    await conn.sendMessage(m.chat, {
-      text: fullMessage,
-      mentions: [m.sender]
-    })
-  }
+  } catch {}
+
+  await conn.sendMessage(m.chat, {
+    text: fullMessage,
+    mentions: [m.sender]
+  })
 }
 
 export async function before(m, { conn, isAdmin, isBotAdmin, isOwner, isROwner }) {
@@ -100,13 +98,8 @@ export async function before(m, { conn, isAdmin, isBotAdmin, isOwner, isROwner }
   try {
     const text = extractTextFromMessage(m)
     if (await containsSuspiciousLink(text)) {
-      const reason = 'Link WhatsApp o URL sospetto rilevato.'
-      await handleViolation(
-        conn,
-        m,
-        `🚫 ${reason}`,
-        isBotAdmin
-      )
+      const reason = '🚫 Link WhatsApp o URL sospetto rilevato.'
+      await handleViolation(conn, m, reason, isBotAdmin)
       return true
     }
   } catch (err) {
