@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import { exec } from 'child_process'
 import ffmpeg from 'fluent-ffmpeg'
+import { Whisper } from 'faster-whisper'
 
 const handler = async (m, { conn }) => {
   if (!m.isGroup) return m.reply('⚠️ Solo nei gruppi.')
@@ -11,56 +11,47 @@ const handler = async (m, { conn }) => {
   await m.reply('🎙️ Trascrizione in corso...')
 
   try {
-    // scarica l'audio
+    // scarica audio
     const audioBuffer = await m.quoted.download()
-    const fileBase = `${Date.now()}`
-    const oggPath = path.join('.', `${fileBase}.ogg`)
-    const wavPath = path.join('.', `${fileBase}.wav`)
-    const txtPath = path.join('.', `${fileBase}.txt`)
+    const oggPath = path.join('.', `audio-${Date.now()}.ogg`)
+    const wavPath = path.join('.', `audio-${Date.now()}.wav`)
 
-    // salva l'audio scaricato
     fs.writeFileSync(oggPath, audioBuffer)
 
-    // converte in WAV con ffmpeg
+    // converte OGG → WAV con ffmpeg
     await new Promise((resolve, reject) => {
       ffmpeg(oggPath)
         .toFormat('wav')
         .save(wavPath)
         .on('end', resolve)
-        .on('error', reject)
+        .on('error', (err) => {
+          console.error('FFMPEG ERROR:', err)
+          reject(err)
+        })
     })
 
-    // esegue whisper locale
-    exec(`whisper "${wavPath}" --model small --output_format txt --output_dir . --language Italian`, async (err) => {
-      if (err) {
-        console.error(err)
-        return m.reply('❌ Errore nella trascrizione.')
-      }
+    // trascrive con faster-whisper
+    const model = new Whisper('small') // puoi cambiare modello
+    const result = await model.transcribe(wavPath, { language: 'it' })
 
-      if (!fs.existsSync(txtPath))
-        return m.reply('❌ File di trascrizione non trovato.')
-
-      const text = fs.readFileSync(txtPath, 'utf-8')
-
-      await conn.sendMessage(
-        m.chat,
-        {
-          text: `
+    // invia risposta
+    await conn.sendMessage(
+      m.chat,
+      {
+        text: `
 ╔═[ 𝐃𝐀𝐍𝐆𝐄𝐑 𝐁𝐎𝐓 ]═╗
  🎙️ 𝐓𝐑𝐀𝐒𝐂𝐑𝐈𝐙𝐈𝐎𝐍𝐄 🎙️
 ╚═══════════════╝
 
-${text}
+${result.text}
 `.trim()
-        },
-        { quoted: m }
-      )
+      },
+      { quoted: m }
+    )
 
-      // pulizia dei file
-      fs.unlinkSync(oggPath)
-      fs.unlinkSync(wavPath)
-      fs.unlinkSync(txtPath)
-    })
+    // pulizia file
+    fs.unlinkSync(oggPath)
+    fs.unlinkSync(wavPath)
   } catch (e) {
     console.error(e)
     m.reply('❌ Errore durante la trascrizione.')
