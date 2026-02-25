@@ -23,7 +23,7 @@ const skillsList = ["Problem Solving", "Team Leadership", "JavaScript", "Cyberse
 const jobButtons = (prefix) => [
     {
         buttonId: `${prefix}curriculum`,
-        buttonText: { displayText: '🔄 Rigenera CV' },
+        buttonText: { displayText: '🔄 Rigenera' },
         type: 1
     },
     {
