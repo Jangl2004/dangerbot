@@ -9,6 +9,7 @@ const handler = async (message, { conn, usedPrefix = '.' }) => {
 ➤ ${usedPrefix}banca 🏦
 ➤ ${usedPrefix}deposita 💰
 ➤ ${usedPrefix}slot 🎰
+➤ ${usedPrefix}lavora 💼
 ➤ ${usedPrefix}prelievo 💰
 
 ════════════════════
