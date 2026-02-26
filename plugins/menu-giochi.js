@@ -18,7 +18,7 @@ const handler = async (message, { conn, usedPrefix = '.' }) => {
 ➤ ${usedPrefix}fortunometro 🍀
 ➤ ${usedPrefix}intelligiometro 🧠
 ➤ ${usedPrefix}sborra 💦
-➤ ${usedPrefix}il 🤔
+➤ ${usedPrefix}il ♥️
 ➤ ${usedPrefix}wasted 🕴🏻
 `.trim(),
 
@@ -33,16 +33,17 @@ const handler = async (message, { conn, usedPrefix = '.' }) => {
 ➤ ${usedPrefix}meme 🤣
 ➤ ${usedPrefix}cibo 🍣
 ➤ ${usedPrefix}bandiera 🚩
+➤ ${usedPrefix}classificabandiera 🏆
 `.trim(),
 
         3: `
 🎮 SEZIONE 3/3
-➤ ${usedPrefix}classificabandiera 🏆
 ➤ ${usedPrefix}impiccato 🪢
 ➤ ${usedPrefix}s / sticker 🏷️
 ➤ ${usedPrefix}wm 🔮
 ➤ ${usedPrefix}cur 🎶
 ➤ ${usedPrefix}onlyfans <nome> 🩵🤍
+➤ ${usedPrefix}curriculum 💼
 ➤ ${usedPrefix}sposa 👰🏻
 ➤ ${usedPrefix}divorzia 💔
 ➤ ${usedPrefix}amante 🫂
