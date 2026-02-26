@@ -1,3 +1,4 @@
+// naaah google aint winnin by https://github.com/realvare
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import fs from 'fs'
@@ -8,8 +9,22 @@ const execPromise = promisify(exec)
 const vic = new Map()
 const CACHE_TTL = 15 * 60 * 1000
 const gonnabealongyr = 20 * 60
-const A = [ 'bestaudio[ext=m4a]/bestaudio', '251', '140', 'bestaudio', 'best[height<=480]' ]
-const V = [ '135+140', '134+140', '136+140', '137+140',  /* Sti ultimi due hanno la maggior qualita ma pesano asf */]
+const cookiesPath = path.join(process.cwd(), 'cookies.txt')
+
+const A = [ 
+    'bestaudio[ext=m4a]/bestaudio/best', 
+    '251', 
+    '140' 
+];
+
+const V = [ 
+    '136+140', 
+    '137+140',
+    'bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    'b' 
+];
+
 const tmpDir = path.join(process.cwd(), 'temp')
 if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir)
@@ -26,16 +41,14 @@ function parseDurationToSeconds(duration) {
 
 async function runYtDlp(args) { 
     const ytdlpCommands = [
+        '/usr/bin/yt-dlp',
         'yt-dlp',
         'yt-dlp.exe',
         'python -m yt_dlp',
         path.join(process.cwd(), 'yt-dlp.exe'),
         path.join(process.cwd(), 'node_modules', '.bin', 'yt-dlp'),
-        'python -m yt_dlp',
         'python3 -m yt_dlp'
     ];
-    
-    let lastError;
     
     for (const cmd of ytdlpCommands) {
         try {
@@ -47,12 +60,21 @@ async function runYtDlp(args) {
             
             return { stdout, stderr };
         } catch (error) {
-            lastError = error;
-            continue;
+            const isMissing = error.code === 127 || 
+                              error.message.includes('not found') || 
+                              error.message.includes('is not recognized') || 
+                              error.message.includes('Impossibile trovare');
+            
+            if (isMissing) {
+                continue;
+            }
+            
+            console.error(`\n[errore - dl-play]:`);
+            console.error(error.stderr || error.message);
+            throw new Error('download_failed');
         }
     }
     
-    console.error('[ERROR] yt-dlp not found. Tried:', ytdlpCommands.join(', '));
     throw new Error('YT_DLP_NOT_FOUND');
 }
 
@@ -63,17 +85,16 @@ async function download(url, outputPath, format, extractAudio = false) {
         '-o', `"${outputPath}"`,
         '--no-warnings',
         '--no-playlist',
-        '--prefer-free-formats',
-        '--user-agent', '"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"',
-        '--referer', '"https://www.youtube.com/"',
+        '--js-runtimes', 'node',
+        '--extractor-args', '"youtube:player_client=web_embedded,web"',
+        '--user-agent', '"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"',
     ];
+    if (fs.existsSync(cookiesPath)) {
+        args.push('--cookies', `"${cookiesPath}"`);
+    }
     
     if (extractAudio) {
-        args.push('-x');
-        args.push('--audio-format', 'mp3');
-        args.push('--audio-quality', '0');
-        args.push('--embed-thumbnail');
-        args.push('--add-metadata');
+        args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0', '--embed-thumbnail', '--add-metadata');
     } else {
         args.push('--merge-output-format', 'mp4');
     }
@@ -87,8 +108,15 @@ async function getVideoInfo(url) {
             `"${url}"`,
             '--dump-json',
             '--no-warnings',
-            '--no-playlist'
+            '--no-playlist',
+            '--js-runtimes', 'node',
+            '--extractor-args', '"youtube:player_client=web_embedded,web"',
+            '--user-agent', '"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"'
         ];
+
+        if (fs.existsSync(cookiesPath)) {
+            args.push('--cookies', `"${cookiesPath}"`);
+        }
         
         const { stdout } = await runYtDlp(args);
         const info = JSON.parse(stdout);
@@ -104,15 +132,12 @@ async function getVideoInfo(url) {
             webpage_url: info.webpage_url || url
         };
     } catch (error) {
-        console.error('[ERROR] Failed to get video info:', error.message);
+        console.error('[ERRORE] Impossibile ottenere informazioni video:', error.message);
         const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
-        
         return {
             title: 'Video YouTube',
             uploader: 'YouTube',
             duration: 0,
-            view_count: null,
-            upload_date: null,
             thumbnail: videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : null,
             id: videoId,
             webpage_url: url
@@ -192,7 +217,7 @@ let handler = async (m, { conn, command, text, usedprefix }) => {
             }
 
             const title = videoInfo.title.replace(/[<>:"/\\|?*]/g, '_').substring(0, 70);
-            const author = videoInfo.uploader.substring(0, 25);
+            const author = videoInfo.uploader ? videoInfo.uploader.substring(0, 25) : 'Sconosciuto';
             const views = videoInfo.view_count ? parseInt(videoInfo.view_count).toLocaleString() : '?';
 
             const captionMessage = `
@@ -269,7 +294,7 @@ let handler = async (m, { conn, command, text, usedprefix }) => {
         );
 
     } catch (e) {
-        console.error('[ERROR] Handler failed:', e.message);
+        console.error('[ERRORE] Gestore fallito:', e.message);
         await conn.reply(m.chat, typeof e === 'string' ? e : '❌ *Errore durante la ricerca!*', m);
     } finally {
         await conn.sendPresenceUpdate('paused', m.chat);
@@ -295,7 +320,7 @@ async function downloadMedia(m, conn, command, url, prefix, preloadedVideoInfo =
                         };
                     }
                 } catch (err) {
-                    console.warn('[WARN] ytSearch fallback failed:', err.message);
+        console.warn('[ATTENZIONE] Ricerca ytSearch fallita:', err.message);
                 }
             }
 
@@ -358,23 +383,24 @@ async function downloadMedia(m, conn, command, url, prefix, preloadedVideoInfo =
                                 contextInfo: global.fake.contextInfo
                             }, { quoted: m });
                         } else {
-                            await conn.sendMessage(m.chat, {
-                                audio: buffer,
-                                mimetype: 'audio/mpeg',
-                                fileName: `${safeTitle}.mp3`,
-                                ptt: false,
-                                contextInfo: {
+                        const authorName = videoInfo?.uploader || 'Sconosciuto';
+                        await conn.sendMessage(m.chat, {
+                            audio: buffer,
+                            mimetype: 'audio/mpeg',
+                            fileName: `${safeTitle}.mp3`,
+                            ptt: false,
+                            contextInfo: {
+                                ...global.fake.contextInfo,
+                                externalAdReply: {
                                     ...global.fake.contextInfo,
-                                    externalAdReply: {
-                                        ...global.fake.contextInfo,
-                                        title: `${videoInfo?.title} - ${author?.name}`,
-                                        body: '⋆⭑˚₊ 𝓥𝓪𝓻𝓮𝓫𝓸𝓽 ₊˚⭑⋆',
-                                        thumbnailUrl: videoInfo ? videoInfo.thumbnail : null,
-                                        mediaType: 1,
-                                        renderLargerThumbnail: false,
-                                    }
+                                    title: `${videoInfo?.title} - ${authorName}`,
+                                    body: '⋆⭑˚₊ 𝓥𝓪𝓻𝓮𝓫𝓸𝓽 ₊˚⭑⋆',
+                                    thumbnailUrl: videoInfo ? videoInfo.thumbnail : null,
+                                    mediaType: 1,
+                                    renderLargerThumbnail: false,
                                 }
-                            }, { quoted: m });
+                            }
+                        }, { quoted: m });
                         }
                         
                         downloaded = true;
@@ -384,7 +410,7 @@ async function downloadMedia(m, conn, command, url, prefix, preloadedVideoInfo =
                     }
                 }
             } catch (err) {
-                console.warn(`[WARN] Format ${format} failed:`, err.message);
+                console.warn(`[ATTENZIONE] Formato ${format} fallito:`, err.message);
                 lastError = err;
                 
                 const files = fs.readdirSync(tmpDir).filter(f => f.startsWith(`${command}_`));
@@ -401,12 +427,12 @@ async function downloadMedia(m, conn, command, url, prefix, preloadedVideoInfo =
         }
 
         if (!downloaded) {
-            console.error('[ERROR] All formats failed');
+        console.error('[ERRORE] Tutti i formati falliti');
             throw new Error('download_failed');
         }
         
     } catch (e) {
-        console.error('[ERROR] Download media failed:', e.message);
+        console.error('[ERRORE] Download media fallito:', e.message);
         
         let errorMessage = '『 ❌ 』- \`Errore durante il download\`';
         
