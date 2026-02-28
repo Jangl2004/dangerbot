@@ -1,66 +1,65 @@
-import { WAMessageStubType } from '@realvare/baileys'
-import axios from 'axios'
+// 🔥 THE DANGER - Welcome & Goodbye 🔥
 
-/* =======================
-   INIT
-======================= */
-export async function before(m, { conn, groupMetadata }) {
-    if (!m.isGroup || !m.messageStubType) return true
+let handler = {}
 
-    const chat = global.db?.data?.chats?.[m.chat]
-    if (!chat) return true
+handler.participantsUpdate = async function ({ id, participants, action }) {
+  const groupMetadata = await this.groupMetadata(id)
+  const groupName = groupMetadata.subject
+  const memberCount = groupMetadata.participants.length
 
-    const who = m.messageStubParameters?.[0]
-    if (!who) return true
+  for (let user of participants) {
 
-    const jid = conn.decodeJid(who)
-    const cleanUserId = jid.split('@')[0]
+    const userTag = `@${user.split('@')[0]}`
 
-    /* =======================
-       EVENT TYPES (FIX)
-    ======================= */
-    const isWelcome =
-        m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_ADD ||
-        m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_INVITE
+    // 🔥 NUOVO MEMBRO
+    if (action === 'add') {
 
-    const isGoodbye =
-        m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_LEAVE ||
-        m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_KICK
+      await this.sendMessage(id, {
+        text: `
+╔══════════════════╗
+      ⚠️  THE DANGER  ⚠️
+╚══════════════════╝
 
-    /* =======================
-       BLOCK WRONG EVENTS
-    ======================= */
-    if (!isWelcome && !isGoodbye) return true
-    if (isWelcome && !chat.welcome) return true
-    if (isGoodbye && !chat.goodbye) return true
+🔥 Benvenuto ${userTag}
 
-    const groupName = groupMetadata?.subject || 'Gruppo'
-    const memberCount = groupMetadata?.participants?.length || 0
+Hai appena varcato i confini di *${groupName}*
 
-    /* =======================
-       CAPTION (ELEGANTE)
-    ======================= */
-    const caption = isGoodbye
-        ? `
-「  *BYE BYE*  」
-👤 *Utente:* @${cleanUserId}
-👋🏻 *Ha lasciato il gruppo:" ${groupName}
-👥 *Membri attuali:* ${memberCount}
-`
-        : `
-「  *BENVENUTO*  」
-👤 *Utente:* @${cleanUserId}
-🎉 *Gruppo:* ${groupName}
-👥 *Membri:* ${memberCount}
-`
+👥 Membri attuali: ${memberCount}
 
-    /* =======================
-       SEND MESSAGE
-    ======================= */
-    await conn.sendMessage(m.chat, {
-        text: caption,
-        mentions: [jid]
-    })
+───────────────
+⚠️ YOU ARE NOW IN THE DANGER ZONE ⚠️
+        `.trim(),
+        mentions: [user]
+      })
 
-    return true
+      await this.sendMessage(id, {
+        react: { text: '🔥', key: { remoteJid: id, fromMe: false, id: Date.now().toString() } }
+      }).catch(() => null)
+    }
+
+    // 💀 MEMBRO USCITO
+    if (action === 'remove') {
+
+      await this.sendMessage(id, {
+        text: `
+╔══════════════════╗
+        💀  ADDIO  💀
+╚══════════════════╝
+
+${userTag} ha lasciato *${groupName}*
+
+👥 Membri rimasti: ${memberCount}
+
+Un random in meno
+        `.trim(),
+        mentions: [user]
+      })
+
+      await this.sendMessage(id, {
+        react: { text: '💀', key: { remoteJid: id, fromMe: false, id: Date.now().toString() } }
+      }).catch(() => null)
+    }
+  }
 }
+
+export default handler
