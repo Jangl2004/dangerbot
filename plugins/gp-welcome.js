@@ -1,9 +1,5 @@
 import { WAMessageStubType } from '@realvare/baileys'
-import axios from 'axios'
 
-/* =======================
-   INIT
-======================= */
 export async function before(m, { conn, groupMetadata }) {
     if (!m.isGroup || !m.messageStubType) return true
 
@@ -16,9 +12,6 @@ export async function before(m, { conn, groupMetadata }) {
     const jid = conn.decodeJid(who)
     const cleanUserId = jid.split('@')[0]
 
-    /* =======================
-       EVENT TYPES (FIX)
-    ======================= */
     const isWelcome =
         m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_ADD ||
         m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_INVITE
@@ -27,33 +20,32 @@ export async function before(m, { conn, groupMetadata }) {
         m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_LEAVE ||
         m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_KICK
 
-    /* =======================
-       BLOCK WRONG EVENTS
-    ======================= */
     if (!isWelcome && !isGoodbye) return true
     if (isWelcome && !chat.welcome) return true
     if (isGoodbye && !chat.goodbye) return true
 
     const groupName = groupMetadata?.subject || 'Gruppo'
-    const memberCount = groupMetadata?.participants?.length || 0
 
-    /* =======================
-       CAPTION (ELEGANTE)
-    ======================= */
     const caption = isGoodbye
-        ? `
-𝐌𝐢 𝐬𝐚 𝐜𝐡𝐞 @${cleanUserId} 𝐡𝐚 𝐪𝐮𝐢𝐭𝐭𝐚𝐭𝐨
+        ? `𝐌𝐢 𝐬𝐚 𝐜𝐡𝐞 @${cleanUserId} 𝐡𝐚 𝐪𝐮𝐢𝐭𝐭𝐚𝐭𝐨`
+        : `@${cleanUserId} 𝐁𝐞𝐧𝐯𝐞𝐧𝐮𝐭𝐨 𝐬𝐮 ${groupName}`
 
-`
-        : `
-@${cleanUserId} 𝐁𝐞𝐧𝐯𝐞𝐧𝐮𝐭𝐨 𝐬𝐮 ${groupName}
-`
+    // ======================
+    // PRENDI FOTO PROFILO
+    // ======================
+    let pp
+    try {
+        pp = await conn.profilePictureUrl(jid, 'image')
+    } catch {
+        pp = 'https://i.imgur.com/6M5137b.png' // immagine fallback
+    }
 
-    /* =======================
-       SEND MESSAGE
-    ======================= */
+    // ======================
+    // INVIA CON THUMBNAIL
+    // ======================
     await conn.sendMessage(m.chat, {
-        text: caption,
+        image: { url: pp },
+        caption,
         mentions: [jid]
     })
 
