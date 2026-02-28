@@ -131,7 +131,7 @@ let handler = async (m, { conn }) => {
     )
   } catch (e) {
     console.error(e)
-    m.reply("❌ Errore nella generazione brainrot.")
+    m.reply("Errore nella generazione brainrot.")
   }
 }
 
