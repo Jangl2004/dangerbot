@@ -5,47 +5,48 @@ async function applicaEffetto(m, conn, tipoEffetto, usedPrefix, command) {
     let who = m.sender
 
     const messaggiHelp = {
-        gay: `『 🏳️‍🌈 』 Rendi gay qualcuno\n\nEsempio: ${usedPrefix + command} @utente o rispondi a un messaggio`,
-        trans: `『 🏳️‍⚧️ 』 Rendi trans qualcuno\n\nEsempio: ${usedPrefix + command} @utente o rispondi a un messaggio`,
-        sborra: `『 💦 』 Effetto splash\n\nEsempio: ${usedPrefix + command} @utente o rispondi a un messaggio`
+        gay: `🏳️‍🌈 Usa: ${usedPrefix + command} @utente o rispondi a un messaggio`,
+        trans: `🏳️‍⚧️ Usa: ${usedPrefix + command} @utente o rispondi a un messaggio`,
+        sborra: `💦 Usa: ${usedPrefix + command} @utente o rispondi a un messaggio`
     }
 
-    if (!m.quoted && !m.mentionedJid?.[0] && !m.sender)
+    if (!m.quoted && !m.mentionedJid?.[0])
         return m.reply(messaggiHelp[tipoEffetto])
 
     try {
         let nomeUtente
         let bufferImmagine
 
-        // 🔥 PRIORITÀ:
-        // 1️⃣ Se quoto un'immagine → usa quella
+        // 1️⃣ Se quoti un'immagine → usa quella
         if (m.quoted?.mtype === 'imageMessage') {
             bufferImmagine = await m.quoted.download()
+            if (!bufferImmagine) throw new Error("Immagine non valida")
             nomeUtente = await conn.getName(m.quoted.sender)
         } else {
 
-            // 2️⃣ Se rispondo a qualcuno → usa la sua foto profilo
+            // 2️⃣ Se reply → prende lui
             if (m.quoted) who = m.quoted.sender
 
-            // 3️⃣ Se menziono qualcuno → usa la sua
+            // 3️⃣ Se mention → priorità mention
             if (m.mentionedJid?.[0]) who = m.mentionedJid[0]
 
             nomeUtente = await conn.getName(who)
 
-            let pp = await conn.profilePictureUrl(who, 'image')
-                .catch(() => null)
+            let pp
+            try {
+                pp = await conn.profilePictureUrl(who, 'image')
+            } catch {
+                return m.reply("L'utente non ha una foto profilo!")
+            }
 
-            if (!pp)
-                throw new Error("L'utente non ha una foto profilo!")
-
-            let risposta = await fetch(pp)
-            if (!risposta.ok)
+            const response = await fetch(pp)
+            if (!response.ok)
                 throw new Error("Errore nel recupero della foto profilo")
 
-            bufferImmagine = await risposta.arrayBuffer()
+            bufferImmagine = Buffer.from(await response.arrayBuffer())
         }
 
-        let bufferFinale = await applicaEffettiPride(bufferImmagine, tipoEffetto)
+        const bufferFinale = await applicaEffetti(bufferImmagine, tipoEffetto)
 
         const messaggi = {
             gay: [`${nomeUtente} ora è rainbow 🌈`],
@@ -53,12 +54,12 @@ async function applicaEffetto(m, conn, tipoEffetto, usedPrefix, command) {
             sborra: [`${nomeUtente} è stato colpito 💦`]
         }
 
-        let didascalia = `*${messaggi[tipoEffetto][Math.floor(Math.random() * messaggi[tipoEffetto].length)]}*`
+        const didascalia = `*${messaggi[tipoEffetto][Math.floor(Math.random() * messaggi[tipoEffetto].length)]}*`
 
         await conn.sendFile(
             m.chat,
             bufferFinale,
-            `${tipoEffetto}.jpeg`,
+            `${tipoEffetto}.jpg`,
             didascalia,
             m,
             false,
@@ -67,33 +68,41 @@ async function applicaEffetto(m, conn, tipoEffetto, usedPrefix, command) {
 
     } catch (e) {
         console.error(e)
-        m.reply(e.message || "Errore durante l'elaborazione.")
+        m.reply("❌ Errore durante l'elaborazione dell'immagine.")
     }
 }
 
-async function applicaEffettiPride(bufferImmagine, tipoEffetto) {
-    let img = await loadImage(bufferImmagine)
+async function applicaEffetti(buffer, tipo) {
+    let img = await loadImage(buffer)
 
-    let canvas = createCanvas(img.width, img.height)
-    let ctx = canvas.getContext('2d')
+    // 🔥 Resize automatico anti crash
+    const maxSize = 800
+    let width = img.width
+    let height = img.height
 
-    ctx.drawImage(img, 0, 0)
-
-    const coloriPride = {
-        gay: ['#E40303', '#FF8C00', '#FFED00', '#008563', '#409CFF', '#955ABE'],
-        trans: ['#5BCEFA', '#F5A9B8', '#FFFFFF', '#F5A9B8', '#5BCEFA'],
-        sborra: ['#FFFFFF', '#E6F3FF', '#F0F8FF']
+    if (width > maxSize || height > maxSize) {
+        const scale = Math.min(maxSize / width, maxSize / height)
+        width *= scale
+        height *= scale
     }
 
-    let colori = coloriPride[tipoEffetto]
+    const canvas = createCanvas(width, height)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0, width, height)
 
-    if (tipoEffetto === 'sborra') {
-        for (let i = 0; i < 20; i++) {
+    const colori = {
+        gay: ['#E40303','#FF8C00','#FFED00','#008563','#409CFF','#955ABE'],
+        trans: ['#5BCEFA','#F5A9B8','#FFFFFF','#F5A9B8','#5BCEFA'],
+        sborra: ['#FFFFFF','#E6F3FF','#F0F8FF']
+    }[tipo]
+
+    if (tipo === 'sborra') {
+        for (let i = 0; i < 25; i++) {
             ctx.beginPath()
             ctx.arc(
-                Math.random() * img.width,
-                Math.random() * img.height,
-                Math.random() * 40 + 20,
+                Math.random() * width,
+                Math.random() * height,
+                Math.random() * 35 + 15,
                 0,
                 Math.PI * 2
             )
@@ -102,15 +111,13 @@ async function applicaEffettiPride(bufferImmagine, tipoEffetto) {
         }
     } else {
         ctx.globalAlpha = 0.45
-        const stripeHeight = img.height / colori.length
-
-        colori.forEach((colore, i) => {
-            ctx.fillStyle = colore
-            ctx.fillRect(0, i * stripeHeight, img.width, stripeHeight)
+        const stripeHeight = height / colori.length
+        colori.forEach((c, i) => {
+            ctx.fillStyle = c
+            ctx.fillRect(0, i * stripeHeight, width, stripeHeight)
         })
-
         ctx.globalCompositeOperation = 'overlay'
-        ctx.drawImage(img, 0, 0)
+        ctx.drawImage(img, 0, 0, width, height)
         ctx.globalCompositeOperation = 'source-over'
         ctx.globalAlpha = 1
     }
@@ -119,11 +126,10 @@ async function applicaEffettiPride(bufferImmagine, tipoEffetto) {
 }
 
 let handler = async (m, { conn, usedPrefix, command }) => {
-    const tipoEffetto = command.toLowerCase()
-    await applicaEffetto(m, conn, tipoEffetto, usedPrefix, command)
+    await applicaEffetto(m, conn, command.toLowerCase(), usedPrefix, command)
 }
 
-handler.help = ['gay', 'trans', 'sborra']
+handler.help = ['gay','trans','sborra']
 handler.tags = ['giochi']
 handler.command = /^(gay|trans|sborra)$/i
 
