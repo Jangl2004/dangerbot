@@ -14,15 +14,14 @@ const handler = async (message, { conn, usedPrefix = '.' }) => {
 ➤ ${usedPrefix}warn ⚠️ Avvisa utente
 ➤ ${usedPrefix}listwarn 📄 Lista avvisi
 ➤ ${usedPrefix}unwarn ✅ Rimuovi avviso
+➤ ${usedPrefix}delwarn ❌ Cancella avviso
+➤ ${usedPrefix}resetwarn 🔄 Reset avvisi
+
 `.trim(),
 
         2: `
 🛡️ 𝐍𝚵𝑿𝐒𝐔𝐒 – 𝐌𝐄𝐍𝐔 𝐀𝐃𝐌𝐈𝐍 ⚙️
 ════════════════════
-
-⚠️ 𝐖𝐀𝐑𝐍 & 𝐃𝐈𝐒𝐂𝐈𝐏𝐋𝐈𝐍𝐀
-➤ ${usedPrefix}delwarn ❌ Cancella avviso
-➤ ${usedPrefix}resetwarn 🔄 Reset avvisi
 
 🔇 𝐂𝐎𝐍𝐓𝐑𝐎𝐋𝐋𝐎 𝐂𝐇𝐀𝐓
 ➤ ${usedPrefix}muta 🤫 Muta la persona 
@@ -42,6 +41,8 @@ const handler = async (message, { conn, usedPrefix = '.' }) => {
 
 👋 𝐔𝐓𝐄𝐍𝐓𝐈
 ➤ ${usedPrefix}kick ⚔️ Espelle utente
+➤ ${usedPrefix}nuke 🚨 Nuke fake
+➤ ${usedPrefix}resucita 🔮 Torna come prima
 
 🔗 𝐋𝐈𝐍𝐊
 ➤ ${usedPrefix}link 🔗 Link gruppo
