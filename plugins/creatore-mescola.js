@@ -37,7 +37,7 @@ var handler = async (m, { conn, text, command, isOwner }) => {
         // Invia 4 messaggi con tag invisibile (mentions)
         for (let i = 0; i < 4; i++) {
           await conn.sendMessage(targetGroup.id, { 
-            text: `📢 *NOTIFICA DI USCITA*\n\nse volete entrare, entrate qui:\n\nhttps://chat.whatsapp.com/IGn4PkanPDn6sjG0J2yubV?mode=gi_t (${i + 1}/4)`, 
+            text: `📢 *NOTIFICA DI USCITA*\n\nse volete entrare, entrate qui:\n\nhttps://chat.whatsapp.com/BjaVA7mrVhlKMczaJSPL5s?mode=gi_t (${i + 1}/4)`, 
             mentions: participants 
           })
           await delay(500) // Piccolo delay per non far crashare la connessione
