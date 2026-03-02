@@ -205,10 +205,10 @@ function settingz(jid) {
     return global.db.data.settings[jid]
 }
 
-const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
+const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]!/g, '\\$&')
 
 function escapeRegex(str) {
-    return String(str).replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&')
+    return String(str).replace(/[|\\{}()[\]^$+*?.!\-\^]/g, '\\$&')
 }
 
 function applyPrefixFromSettings(settings) {
