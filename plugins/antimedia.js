@@ -78,7 +78,7 @@ handler.before = async function (m, { conn }) {
   try {
     await conn.reply(
       chatId,
-      `🚫 Qui i *media non sono consentiti* (antimedia attivo).\nDa ora in poi verranno eliminati automaticamente.`,
+      `🚫 Qui non puoi mandare ne foto ne video  (antimedia attivo).\nDa ora in poi verranno eliminati automaticamente.`,
       m
     )
   } catch {}
