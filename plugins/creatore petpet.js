@@ -24,7 +24,7 @@ let handler = async (m, { conn }) => {
   })
 
   const sticker = new Sticker(gifBuffer, {
-    pack: "Il Mio Bot",
+    pack: "Danger Bot",
     author: "petpet",
     type: "full",
     quality: 60,
