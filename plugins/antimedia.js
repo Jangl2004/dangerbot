@@ -1,25 +1,56 @@
-let handler = async () => {}
+let handler = async (m, { conn, args }) => {
+  if (!m.isGroup) return
 
-// stato per gruppo (RAM)
-global._antimedia = global._antimedia || {}
+  const chatId = m.chat
+  global._antimedia = global._antimedia || {}
+  if (!global._antimedia[chatId])
+    global._antimedia[chatId] = { enabled: false }
 
-// memorizza chi è già stato avvisato (RAM)
-// struttura: { [chatId]: Set(jid) }
-global._antimediaWarnedUsers = global._antimediaWarnedUsers || {}
+  const cfg = global._antimedia[chatId]
 
-async function isAdmin(conn, chatId, jid) {
-  try {
-    const meta = await conn.groupMetadata(chatId)
-    const user = (meta.participants || []).find(p => p.id === jid)
-    return !!user?.admin
-  } catch {
-    return false
+  if (!args[0]) {
+    return conn.reply(
+      chatId,
+      `🛡️ Antimedia: *${cfg.enabled ? "ATTIVO ✅" : "DISATTIVO ❌"}*\n\nUso:\n.antimedia 1\n.antimedia 0`,
+      m
+    )
   }
+
+  if (args[0] === "1") {
+    cfg.enabled = true
+    return conn.reply(chatId, "🛡️ Antimedia ATTIVATO ✅", m)
+  }
+
+  if (args[0] === "0") {
+    cfg.enabled = false
+    return conn.reply(chatId, "🛡️ Antimedia DISATTIVATO ❌", m)
+  }
+
+  conn.reply(chatId, "Uso corretto: .antimedia 1 oppure .antimedia 0", m)
 }
 
-function isMediaMessage(m) {
-  const msg = m.message || {}
-  return !!(
+handler.command = ["antimedia"]
+handler.group = true
+handler.admin = true
+handler.tags = ["group"]
+handler.help = ["1/0 antimedia"]
+
+// ===== BLOCCO MEDIA =====
+
+// ===== BLOCCO MEDIA (avviso 1 volta per utente) =====
+
+// memorizza chi è già stato avvisato (RAM)
+global._antimediaWarnedUsers = global._antimediaWarnedUsers || {} 
+// struttura: { [chatId]: Set(jid) }
+
+handler.before = async function (m, { conn }) {
+  if (!m.isGroup || !m.message || m.fromMe) return
+
+  const chatId = m.chat
+  if (!global._antimedia?.[chatId]?.enabled) return
+
+  const msg = m.message
+  const isMedia =
     msg.imageMessage ||
     msg.videoMessage ||
     msg.audioMessage ||
@@ -27,86 +58,29 @@ function isMediaMessage(m) {
     msg.documentMessage ||
     msg.viewOnceMessage ||
     msg.viewOnceMessageV2
-  )
-}
 
-handler.before = async function (m, { conn }) {
+  if (!isMedia) return
+
+  // 1) elimina il media (se il bot è admin)
   try {
-    if (!m?.message) return
-    if (!m.isGroup) return
-    if (m.fromMe) return
+    await conn.sendMessage(chatId, { delete: m.key })
+  } catch {}
 
-    const chatId = m.chat
+  // 2) avvisa SOLO una volta per ogni membro
+  const sender = m.sender
+  global._antimediaWarnedUsers[chatId] = global._antimediaWarnedUsers[chatId] || new Set()
 
-    // init stato gruppo
-    global._antimedia[chatId] = global._antimedia[chatId] || { enabled: false }
-    const cfg = global._antimedia[chatId]
+  const warnedSet = global._antimediaWarnedUsers[chatId]
+  if (warnedSet.has(sender)) return
 
-    const raw = (m.text || "").trim()
+  warnedSet.add(sender)
 
-    // =========================
-    // 1) TOGGLE: .1 antimedia / .0 antimedia
-    // =========================
-    const enableMatch = /^\.\s*1\s+antimedia\s*$/i.test(raw)
-    const disableMatch = /^\.\s*0\s+antimedia\s*$/i.test(raw)
-
-    if (enableMatch || disableMatch) {
-      const senderIsAdmin = await isAdmin(conn, chatId, m.sender)
-      if (!senderIsAdmin) {
-        await conn.reply(chatId, "❌ Solo admin possono usare questo comando.", m)
-        return true
-      }
-
-      cfg.enabled = enableMatch
-
-      await conn.reply(
-        chatId,
-        cfg.enabled ? "🛡️ Antimedia ATTIVATO ✅" : "🛡️ Antimedia DISATTIVATO ❌",
-        m
-      )
-      return true
-    }
-
-    // (opzionale) stato con ".antimedia"
-    if (/^\.\s*antimedia\s*$/i.test(raw)) {
-      await conn.reply(
-        chatId,
-        `🛡️ Antimedia: *${cfg.enabled ? "ATTIVO ✅" : "DISATTIVO ❌"}*\n\nComandi:\n.1 antimedia\n.0 antimedia`,
-        m
-      )
-      return true
-    }
-
-    // =========================
-    // 2) BLOCCO MEDIA + avviso 1 volta per utente
-    // =========================
-    if (!cfg.enabled) return
-    if (!isMediaMessage(m)) return
-
-    // elimina il media (serve admin al bot)
-    try {
-      await conn.sendMessage(chatId, { delete: m.key })
-    } catch {}
-
-    // avvisa SOLO una volta per utente
-    global._antimediaWarnedUsers[chatId] = global._antimediaWarnedUsers[chatId] || new Set()
-    const warnedSet = global._antimediaWarnedUsers[chatId]
-
-    const sender = m.sender
-    if (warnedSet.has(sender)) return
-
-    warnedSet.add(sender)
-
-    try {
-      await conn.reply(
-        chatId,
-        "🚫 Qui non puoi mandare né foto né video (antimedia attivo).\nDa ora in poi verranno eliminati automaticamente.",
-        m
-      )
-    } catch {}
-  } catch (e) {
-    console.error("Errore antimedia:", e)
-  }
+  try {
+    await conn.reply(
+      chatId,
+      `🚫 Qui non puoi mandare ne foto ne video  (antimedia attivo).\nDa ora in poi verranno eliminati automaticamente.`,
+      m
+    )
+  } catch {}
 }
-
 export default handler
