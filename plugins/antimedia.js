@@ -1,4 +1,4 @@
-let handler = async (m, { conn, args }) => {
+let handler = async (m, { conn, command, args }) => {
   if (!m.isGroup) return
 
   const chatId = m.chat
@@ -8,34 +8,33 @@ let handler = async (m, { conn, args }) => {
 
   const cfg = global._antimedia[chatId]
 
-  if (!args[0]) {
+  // controllo che dopo .1 o .0 ci sia scritto "antimedia"
+  if (!args[0] || args[0].toLowerCase() !== "antimedia") {
     return conn.reply(
       chatId,
-      `🛡️ Antimedia: *${cfg.enabled ? "ATTIVO ✅" : "DISATTIVO ❌"}*\n\nUso:\n.antimedia 1\n.antimedia 0`,
+      `Uso corretto:\n.1 antimedia\n.0 antimedia`,
       m
     )
   }
 
-  if (args[0] === "1") {
+  if (command === "1") {
     cfg.enabled = true
     return conn.reply(chatId, "🛡️ Antimedia ATTIVATO ✅", m)
   }
 
-  if (args[0] === "0") {
+  if (command === "0") {
     cfg.enabled = false
     return conn.reply(chatId, "🛡️ Antimedia DISATTIVATO ❌", m)
   }
-
-  conn.reply(chatId, "Uso corretto: .antimedia 1 oppure .antimedia 0", m)
 }
 
-handler.command = ["antimedia"]
+handler.command = ["1", "0"]
 handler.group = true
 handler.admin = true
 handler.tags = ["group"]
-handler.help = ["1/0 antimedia"]
+handler.help = ["1 antimedia", "0 antimedia"]
 
-// ===== BLOCCO MEDIA =====
+export default handler
 
 // ===== BLOCCO MEDIA (avviso 1 volta per utente) =====
 
