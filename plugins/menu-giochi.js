@@ -18,6 +18,7 @@ const handler = async (message, { conn, usedPrefix = '.' }) => {
 ➤ ${usedPrefix}masturbometro 🍷
 ➤ ${usedPrefix}fortunometro 🍀
 ➤ ${usedPrefix}intelligiometro 🧠
+➤ ${usedPrefix}presentazione🤖
 
 ════════════════════
 🎯 𝐀𝐙𝐙𝐀𝐑𝐃𝐎 & 𝐂𝐀𝐎𝐒
@@ -47,6 +48,8 @@ const handler = async (message, { conn, usedPrefix = '.' }) => {
 ➤ ${usedPrefix}dox 🖊️
 ➤ ${usedPrefix}pic 📸
 ➤ ${usedPrefix}bacia💋 
+➤ ${usedPrefix}petpet
+
 ════════════════════
 💍 𝐑𝐄𝐋𝐀𝐙𝐈𝐎𝐍𝐈
 ➤ ${usedPrefix}sposa 👰🏻
