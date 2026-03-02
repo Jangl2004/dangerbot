@@ -1,38 +1,36 @@
 // Plugin fatto da Luxifer   
 let handler = async () => {}
 
+// ✅ memoria in RAM: una presentazione per gruppo finché il bot è online
+const introducedGroups = new Set()
+
 handler.before = async function (m, { conn }) {
   try {
     if (!m) return
     if (!m.isGroup) return
 
-    const botJidRaw = conn.user?.jid
-    if (!botJidRaw) return
-    const decode = conn.decodeJid ? conn.decodeJid.bind(conn) : (j) => j
-
     const chatId = m.chat
+    const botJid = conn.user?.jid
+    if (!botJid) return
+
     const prefixDefault = "."
 
     // =========================
-    // 0) AUTO-INTRO al primo messaggio visto nel gruppo (non serve admin)
+    // 1) AUTO-PRESENTAZIONE senza admin:
+    //    appena il bot "vede" un messaggio normale nel gruppo
     // =========================
-    // usa un flag per gruppo: se non esiste, lo creiamo
-    global.db = global.db || {}
-    global.db.data = global.db.data || {}
-    global.db.data.groupIntro = global.db.data.groupIntro || {}
-
-    // se non ho ancora fatto la presentazione in questo gruppo
-    if (!global.db.data.groupIntro[chatId]) {
-      // aspetta un messaggio "normale" (non di sistema), per evitare falsi trigger
+    // Importante: lo facciamo SOLO su messaggi non di sistema,
+    // e solo se non l'abbiamo già fatto in questo gruppo.
+    if (!introducedGroups.has(chatId)) {
       if (m.message && !m.isBaileys && !m.fromMe) {
-        global.db.data.groupIntro[chatId] = true
+        introducedGroups.add(chatId)
         await sendIntro(conn, chatId, prefixDefault, m)
         return
       }
     }
 
     // =========================
-    // 1) Presentazione su menzione + keyword (come già avevi)
+    // 2) PRESENTAZIONE su menzione + keyword (il tuo comportamento)
     // =========================
     if (!m.message) return
     if (m.isBaileys) return
@@ -43,9 +41,9 @@ handler.before = async function (m, { conn }) {
 
     const prefix = getPrefix(textRaw) || prefixDefault
 
-    const botJid = decode(botJidRaw)
-    const mentioned = getMentionedJids(m).map(decode)
-    if (!mentioned.includes(botJid)) return
+    const mentioned = getMentionedJids(m)
+    const isMentioned = mentioned.includes(botJid)
+    if (!isMentioned) return
 
     const text = textRaw.toLowerCase()
     const wantIntro =
@@ -85,8 +83,7 @@ Sono un bot per gruppi WhatsApp: offro una maggiore sicurezza al gruppo e a intr
     headerType: 1
   }
 
-  if (quotedMsg) await conn.sendMessage(chatId, payload, { quoted: quotedMsg })
-  else await conn.sendMessage(chatId, payload)
+  await conn.sendMessage(chatId, payload, quotedMsg ? { quoted: quotedMsg } : {})
 }
 
 function getPrefix(text) {
