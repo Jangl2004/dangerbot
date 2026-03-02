@@ -1,26 +1,44 @@
 // Plugin fatto da Luxifer 
-
 let handler = async () => {}
 
-// ✅ Presentazione quando il bot viene menzionato + keyword
 handler.before = async function (m, { conn }) {
   try {
     if (!m.message) return
     if (m.isBaileys) return
-    if (m.fromMe) return
     if (!m.isGroup) return
 
     const botJid = conn.user?.jid
     if (!botJid) return
 
+    // ✅ 1) AUTO-PRESENTAZIONE quando il bot viene aggiunto
+    // messageStubType / messageStubParameters vengono usati in molte basi
+    const stubType = m.messageStubType
+    const stubParams = m.messageStubParameters || []
+
+    // 27/28/29 variano a seconda della base/wa version: add/invite ecc.
+    const isAddStub = [27, 28, 29].includes(stubType)
+
+    if (isAddStub) {
+      // stubParams di solito contiene i JID aggiunti
+      const addedJids = stubParams
+      const botAdded = addedJids.includes(botJid)
+
+      if (botAdded) {
+        const prefix = "."
+        await sendIntro(conn, m.chat, prefix, null)
+        return
+      }
+    }
+
+    // ✅ 2) PRESENTAZIONE su menzione + keyword (il tuo codice)
+    if (m.fromMe) return
+
     const textRaw = (m.text || "").trim()
     if (!textRaw) return
 
     const prefix = getPrefix(textRaw) || "."
-
     const mentioned = getMentionedJids(m)
-    const isMentioned = mentioned.includes(botJid)
-    if (!isMentioned) return
+    if (!mentioned.includes(botJid)) return
 
     const text = textRaw.toLowerCase()
     const wantIntro =
@@ -39,30 +57,6 @@ handler.before = async function (m, { conn }) {
   }
 }
 
-// ✅ Presentazione automatica quando il bot entra nel gruppo
-handler.groupParticipantsUpdate = async function (update, { conn }) {
-  try {
-    const botJid = conn.user?.jid
-    if (!botJid) return
-
-    // update: { id, participants, action }
-    if (update.action !== "add") return
-
-    const added = update.participants || []
-    const botJustAdded = added.includes(botJid)
-    if (!botJustAdded) return
-
-    const prefix = "." // qui puoi fissarlo oppure recuperarlo dal DB se lo gestisci lì
-
-    // non hai un messaggio "m" da quotare, quindi niente quoted
-    await sendIntro(conn, update.id, prefix, null)
-
-  } catch (e) {
-    console.error("Errore auto-presentazione:", e)
-  }
-}
-
-// 🔁 Funzione riutilizzabile per mandare la presentazione
 async function sendIntro(conn, chatId, prefix, quotedMsg) {
   const botName = global.db?.data?.nomedelbot || "DANGER BOT"
 
@@ -84,12 +78,8 @@ Sono un bot per gruppi WhatsApp: offro una maggiore sicurezza al gruppo e a intr
     headerType: 1
   }
 
-  // quoted solo se esiste
-  if (quotedMsg) {
-    await conn.sendMessage(chatId, payload, { quoted: quotedMsg })
-  } else {
-    await conn.sendMessage(chatId, payload)
-  }
+  if (quotedMsg) await conn.sendMessage(chatId, payload, { quoted: quotedMsg })
+  else await conn.sendMessage(chatId, payload)
 }
 
 function getPrefix(text) {
