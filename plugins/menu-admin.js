@@ -8,6 +8,7 @@ const handler = async (message, { conn, usedPrefix = '.' }) => {
 ════════════════════
 
 👑 𝐆𝐄𝐒𝐓𝐈𝐎𝐍𝐄 
+➤ ${usedPrefix}rouletteban 🚨 Kick persona random
 ➤ ${usedPrefix}admins 🛡️ Lista admin
 ➤ ${usedPrefix}accetta ✅ Accetta tutte le richieste 
 
