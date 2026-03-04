@@ -9,7 +9,7 @@ const handler = async (m, { conn, command, text, isAdmin, isOwner }) => {
   let chat = global.db.data.chats[m.chat]
 
   // --- COMANDO NUKE ---
-  if (['nuke', 'fakenuke'].includes(command)) {
+  if (['sparisci', 'fakenuke'].includes(command)) {
     const groupMetadata = await conn.groupMetadata(m.chat)
     
     // Salviamo i dati reali per il comando .resuscita
@@ -73,9 +73,9 @@ ${link}
   }
 }
 
-handler.help = ['nuke', 'resuscita']
+handler.help = ['sparisci', 'resuscita']
 handler.tags = ['group', 'owner']
-handler.command = ['nuke', 'fakenuke', 'resuscita', 'revive', 'ripristina']
+handler.command = ['sparisci', 'fakenuke', 'resuscita', 'revive', 'ripristina']
 
 handler.group = true
 handler.botAdmin = true 
