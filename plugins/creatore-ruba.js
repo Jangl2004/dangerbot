@@ -29,12 +29,12 @@ let handler = async (m, { conn, participants, isBotAdmin }) => {
     let metadata = await conn.groupMetadata(m.chat)
     let oldName = metadata.subject
 
-    let newName = `${oldName} | 𝑹𝑼𝑩 𝑩𝒀 𝑺𝑨𝑪𝑹𝑰𝑭𝑰𝑪𝑬`
+    let newName = `${oldName} | RUB BY THE DANGER `
 
     await conn.groupUpdateSubject(m.chat, newName)
 
     await m.reply(
-      '𝑮𝑹𝑼𝑷𝑷𝑶 𝑹𝑼𝑩𝑨𝑻𝑶 𝑩𝒀 𝑺𝑨𝑪𝑹𝑰𝑭𝑰𝑪𝑬'
+      'GRUPPO RUBATO BY THE DANGER'
     )
   } catch (e) {
     console.error('Errore nel comando domina:', e)
