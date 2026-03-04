@@ -1,4 +1,6 @@
-let handler = async (m, { conn, text, participants }) => {
+let handler = async (m, { conn, text, participants, isROwner }) => {
+    if (!isROwner) return; // SOLO OWNER
+
     try {
       // Funzione per il ritardo
       const delay = (time) => new Promise((res) => setTimeout(res, time));
@@ -16,12 +18,12 @@ let handler = async (m, { conn, text, participants }) => {
 
       // Funzione per inviare messaggio con "hidetag"
       const sendHidetagMessage = async (message) => {
-        let more = String.fromCharCode(0); // Carattere invisibile
-        let masss = more.repeat(0); // Ripeti il carattere per formare lo spazio invisibile
+        let more = String.fromCharCode(0);
+        let masss = more.repeat(0);
         await conn.relayMessage(m.chat, {
           extendedTextMessage: {
             text: `${masss}\n${message}\n`,
-            contextInfo: { mentionedJid: users }, // Menziona gli utenti, se necessario
+            contextInfo: { mentionedJid: users },
           },
         }, {});
       };
@@ -33,13 +35,12 @@ let handler = async (m, { conn, text, participants }) => {
         messageChunks.push(customMessage.slice(0, maxMessageLength));
         customMessage = customMessage.slice(maxMessageLength);
       }
-      messageChunks.push(customMessage); // Aggiungi il resto del messaggio
+      messageChunks.push(customMessage);
 
-      // Invia i messaggi "flood" con il ritardo e il hidetag
       for (let i = 0; i < 10; i++) {
         for (let chunk of messageChunks) {
-          await sendHidetagMessage(chunk); // Invia il messaggio con hidetag
-          await delay(2000); // Ritardo di 2 secondi tra ogni messaggio
+          await sendHidetagMessage(chunk);
+          await delay(2000);
         }
       }
     } catch (e) {
@@ -47,7 +48,8 @@ let handler = async (m, { conn, text, participants }) => {
     }
   };
 
-  handler.command = /^(bigtag)$/i; // Cambia il comando a ".bigtag"
-  handler.group = true; // Funziona solo nei gruppi
-  handler.rowner = true; // Solo il proprietario del bot può usarlo
-  export default handler;
+handler.command = /^(bigtag)$/i;
+handler.group = true;
+handler.rowner = true;
+
+export default handler;
