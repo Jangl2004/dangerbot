@@ -25,7 +25,6 @@ const handler = async (m, { conn, text, usedPrefix }) => {
 │ ⏱ *Durata:* ${video.timestamp || 'N/D'}
 │ 👁 *Views:* ${video.views?.toLocaleString?.() || video.views || 'N/D'}
 │ 📺 *Canale:* ${video.author?.name || 'Sconosciuto'}
-│ 🔗 *Link:* ${video.url}
 │
 ╰──────────────
 ⬇️ *Scegli formato:*
