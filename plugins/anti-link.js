@@ -10,31 +10,37 @@ import fetch from 'node-fetch'
 import { FormData } from 'formdata-node'
 
 const WHATSAPP_GROUP_REGEX = /\bchat\.whatsapp\.com\/([0-9A-Za-z]{20,24})/i
-const WHATSAPP_CHANNEL_REGEX = /whatsapp\.com\/channel\/([0-9A-Za-z]{20,24})/i
+const WHATSAPP_CHANNEL_REGEX = /(?:https?:\/\/)?(?:www\.)?whatsapp\.com\/channel\/([0-9A-Za-z]{20,24})/i
 
 const SHORT_URL_DOMAINS = [
-  'bit.ly','tinyurl.com','t.co','short.link','shorturl.at',
-  'is.gd','v.gd','goo.gl','ow.ly','buff.ly','tiny.cc',
-  'shorte.st','adf.ly','linktr.ee','rebrand.ly',
-  'bitly.com','cutt.ly','short.io','links.new',
-  'link.ly','ur.ly','shrinkme.io','clck.ru',
-  'short.gy','lnk.to','sh.st','ouo.io','bc.vc',
-  'adfoc.us','linkvertise.com','exe.io','linkbucks.com'
+  'bit.ly', 'tinyurl.com', 't.co', 'short.link', 'shorturl.at',
+  'is.gd', 'v.gd', 'goo.gl', 'ow.ly', 'buff.ly', 'tiny.cc',
+  'shorte.st', 'adf.ly', 'linktr.ee', 'rebrand.ly',
+  'bitly.com', 'cutt.ly', 'short.io', 'links.new',
+  'link.ly', 'ur.ly', 'shrinkme.io', 'clck.ru',
+  'short.gy', 'lnk.to', 'sh.st', 'ouo.io', 'bc.vc',
+  'adfoc.us', 'linkvertise.com', 'exe.io', 'linkbucks.com'
 ]
 
 const SHORT_URL_REGEX = new RegExp(
-  `https?:\\/\\/(?:www\\.)?(?:${SHORT_URL_DOMAINS.map(d => d.replace('.', '\\.')).join('|')})\\/[^\\s]*`,
+  `https?:\\/\\/(?:www\\.)?(?:${SHORT_URL_DOMAINS.map(d => d.replace('.', '\\.')).join('|')})\\/[^\\s]+`,
   'gi'
 )
 
-function isWhatsAppLink(url) {
-  return WHATSAPP_GROUP_REGEX.test(url) || WHATSAPP_CHANNEL_REGEX.test(url)
+function isWhatsAppLink(text = '') {
+  return WHATSAPP_GROUP_REGEX.test(text) || WHATSAPP_CHANNEL_REGEX.test(text)
 }
 
-async function containsSuspiciousLink(text) {
-  if (!text) return false
+function hasShortUrl(text = '') {
+  return SHORT_URL_REGEX.test(text)
+}
+
+async function containsSuspiciousLink(text = '') {
+  if (!text || typeof text !== 'string') return false
+
   if (isWhatsAppLink(text)) return true
-  if (SHORT_URL_REGEX.test(text)) return true
+  if (hasShortUrl(text)) return true
+
   return false
 }
 
@@ -44,6 +50,7 @@ function extractTextFromMessage(m) {
     m.message?.extendedTextMessage?.text ||
     m.message?.imageMessage?.caption ||
     m.message?.videoMessage?.caption ||
+    m.message?.conversation ||
     ''
   ).trim()
 }
@@ -61,7 +68,7 @@ ${reason}
 `.trim()
 
   if (!isBotAdmin) {
-    return conn.sendMessage(
+    return await conn.sendMessage(
       m.chat,
       {
         text: `
@@ -77,26 +84,45 @@ Rendimi amministratore per eseguire il protocollo.
 
   try {
     await conn.sendMessage(m.chat, { delete: m.key })
-  } catch {}
+  } catch (e) {
+    console.error('Errore eliminazione messaggio:', e)
+  }
 
   try {
     await conn.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
-  } catch {}
+  } catch (e) {
+    console.error('Errore rimozione utente:', e)
+  }
 
-  await conn.sendMessage(m.chat, {
-    text: fullMessage,
-    mentions: [m.sender]
-  })
+  await conn.sendMessage(
+    m.chat,
+    {
+      text: fullMessage,
+      mentions: [m.sender]
+    },
+    { quoted: m }
+  )
 }
 
 export async function before(m, { conn, isAdmin, isBotAdmin, isOwner, isROwner }) {
-  if (!m.isGroup || isAdmin || isOwner || isROwner || m.fromMe) return false
-
-  const chat = global.db.data.chats[m.chat]
-  if (!chat?.antiLink) return false
-
   try {
+    if (!m.isGroup || isAdmin || isOwner || isROwner || m.fromMe) return false
+
+    global.db.data.chats = global.db.data.chats || {}
+    global.db.data.chats[m.chat] = global.db.data.chats[m.chat] || {}
+
+    const chat = global.db.data.chats[m.chat]
+
+    // ATTIVO DI DEFAULT
+    // Si disattiva solo se antiLink è esplicitamente false
+    if (chat.antiLink === undefined) {
+      chat.antiLink = true
+    }
+
+    if (chat.antiLink === false) return false
+
     const text = extractTextFromMessage(m)
+
     if (await containsSuspiciousLink(text)) {
       const reason = '🚫 Link WhatsApp o URL sospetto rilevato.'
       await handleViolation(conn, m, reason, isBotAdmin)
