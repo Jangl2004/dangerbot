@@ -6,17 +6,23 @@ if(!text) return conn.reply(m.chat,'❌ URL mancante',m)
 
 await conn.reply(m.chat,'🎧 Scarico audio...',m)
 
-let api = `https://api.akuari.my.id/downloader/youtube?link=${text}`
+try {
 
-let res = await fetch(api)
-let json = await res.json()
+let res = await fetch(`https://api.siputzx.my.id/api/d/ytmp3?url=${text}`)
+let data = await res.json()
 
-let audio = json.mp3
+let audio = data.data.dl
 
 await conn.sendMessage(m.chat,{
 audio:{url:audio},
 mimetype:'audio/mpeg'
 },{quoted:m})
+
+} catch(e){
+
+conn.reply(m.chat,'❌ Errore download audio',m)
+
+}
 
 }
 
