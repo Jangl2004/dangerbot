@@ -46,9 +46,6 @@ let handler = async (m, { conn, usedPrefix }) => {
 │ 🕒 *_Uptime_*   : ${uptimeStr}
 │ 💾 *_RAM_*       : ${percentUsed}%
 │ 📅 *_Online_*   : ${activationTime}
-│ 🧠 *_CPU_*       : ${loadStr} (${cores} core)
-│ 🟢 *_WS_*        : ${wsState}
-│ 🧩 *_Node_*      : ${nodeVer}
 │ 💾 *_RAM GB_*    : ${usedMemGB}/${totalMemGB} GB
 │ 👑 *_Owner_*    : ${ownerName}
 ╰───────────────
