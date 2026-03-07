@@ -1,4 +1,4 @@
-// Plugin ping migliorato (senza doppio messaggio) - by ChatGPT
+// Plugin fatto da dildo
 import os from 'os';
 
 let handler = async (m, { conn, usedPrefix }) => {
@@ -16,10 +16,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     const totalMemGB = (totalMem / 1024 / 1024 / 1024).toFixed(2);
     const usedMemGB = (usedMem / 1024 / 1024 / 1024).toFixed(2);
 
-    const botName = global.db?.data?.nomedelbot || "𝑑𝑎𝑛𝑔𝑒𝑟 𝑏𝑜𝑡";
-
-    // 👑 OWNER
-    const ownerName = "Führer Luxifer"; // cambia qui se vuoi
+    const botName = global.db?.data?.nomedelbot || "𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓";
 
     const botStartTime = new Date(Date.now() - uptimeMs);
     const activationTime = botStartTime.toLocaleString('it-IT', {
@@ -38,24 +35,28 @@ let handler = async (m, { conn, usedPrefix }) => {
     const loadStr = `${load[0].toFixed(2)} / ${load[1].toFixed(2)} / ${load[2].toFixed(2)}`;
     const nodeVer = process.version;
 
-    const textMsg =`
-⟦ 𝐒𝐓𝐀𝐓𝐎 𝐁𝐎𝐓 ⟧
+ const textMsg =`
+╔═══〔 ⚙️ 𝑺𝑻𝑨𝑻𝑶 ⚙️ 〕═══╗
 
-╭───────────────
-│ ⚡ *_Ping_*     : ${speed} ms
-│ 🕒 *_Uptime_*   : ${uptimeStr}
-│ 💾 *_RAM_*       : ${percentUsed}%
-│ 📅 *_Online_*   : ${activationTime}
-│ 💾 *_RAM GB_*    : ${usedMemGB}/${totalMemGB} GB
-│ 👑 *_Owner_*    : ${ownerName}
-╰───────────────
+╭─❖ 「 📡 PERFORMANCE 」 ❖─╮
+│ ⚡ Ping        : ${speed} ms
+│ 🕒 Uptime      : ${uptimeStr}
+╰───────────────╯
 
-🟢 *_Tutti i sistemi attivi_*
+╭─❖ 「 📅 ATTIVAZIONE 」 ❖─╮
+│ 🟢 Attivo : ${activationTime}
+╰───────────────╯
+
+╭─❖ 「 👑 OWNER 」 ❖─╮
+│ LUXIFER
+╰───────────╯
+
+╚═══════════════╝
 `.trim();
 
     await conn.sendMessage(m.chat, {
       text: textMsg,
-      footer: "PING BY DANGER BOT",
+      footer: "🚀 𝑻𝒖𝒕𝒕𝒊 𝒊 𝒔𝒊𝒔𝒕𝒆𝒎𝒊 𝒐𝒑𝒆𝒓𝒂𝒕𝒊𝒗𝒊 🚀",
       buttons: [
         { buttonId: usedPrefix + "ping", buttonText: { displayText: "📡 𝐑𝐢𝐟𝐚𝐢 𝐏𝐢𝐧𝐠" }, type: 1 },
         { buttonId: usedPrefix + "menu", buttonText: { displayText: "📋 𝐌𝐞𝐧𝐮" }, type: 1 }
@@ -70,6 +71,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
 async function getRealPing(conn) {
   try {
+    // WebSocket ping (se disponibile)
     if (conn?.ws && typeof conn.ws.ping === 'function') {
       const t0 = Date.now();
       await conn.ws.ping();
@@ -77,10 +79,12 @@ async function getRealPing(conn) {
       return Number.isFinite(ms) ? ms.toString() : "0";
     }
 
+    // Fallback "preciso" locale (non invia nulla): misura latenza event-loop
+    // (Se ws.ping non esiste nella tua base)
     const t0 = Date.now();
     await new Promise((resolve) => setImmediate(resolve));
     const ms = Date.now() - t0;
-    return `${ms} (local)`;
+    return `${ms}`;
   } catch {
     return "Errore";
   }
@@ -88,6 +92,7 @@ async function getRealPing(conn) {
 
 function getWsState(conn) {
   const rs = conn?.ws?.readyState;
+  // standard ws readyState: 0 CONNECTING, 1 OPEN, 2 CLOSING, 3 CLOSED
   if (rs === 1) return "OPEN";
   if (rs === 0) return "CONNECTING";
   if (rs === 2) return "CLOSING";
