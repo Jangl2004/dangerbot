@@ -1,134 +1,100 @@
 /*
   =============================================================
-  PLUGIN: .nuke (Nuke con Messaggio Personalizzato)
-  DESCRIZIONE: Un comando riservato all'Owner, da usare in DM.
+  PLUGIN: .nuke (Versione Privata + Tag All Integrato)
+  DESCRIZIONE: Funziona solo nel TUO gruppo privato.
   =============================================================
 */
 
 const nukeQueue = {}; 
-
 const delay = time => new Promise(res => setTimeout(res, time));
 
-let handler = async (m, { conn, text: rawText, usedPrefix, isOwner, isBotAdmin }) => {
-    
-    const btnId = m?.message?.buttonsResponseMessage?.selectedButtonId || "";
-    const text = m.text || btnId || rawText || "";
-    
-    const [command, ...args] = text.replace(usedPrefix, "").trim().split(/\s+/);
+// INSERISCI QUI L'ID DEL TUO GRUPPO PRIVATO CON IL BOT
+const MIO_GRUPPO_PRIVATO = 'TUO_ID_GRUPPO_QUI@g.us'; 
 
-    if (command !== 'nuke') return; 
+let handler = async (m, { conn, text: rawText, usedPrefix, isOwner }) => {
+    
+    // Controllo sicurezza: funziona solo nel gruppo che hai scelto
+    if (!isOwner || m.chat !== MIO_GRUPPO_PRIVATO) return;
 
-    if (!isOwner) return m.reply("Questo comando è riservato al mio Owner.");
-    if (m.isGroup) return m.reply("Questo comando deve essere usato nella mia chat privata (DM).");
+    const [command, ...args] = rawText.trim().split(/\s+/);
+    if (command !== '.nuke') return; 
 
     const action = (args[0] || 'menu').toLowerCase();
     const value = args[1] || "";
-    const message = args.join(' '); 
+    const message = args.slice(1).join(' '); 
 
+    // --- FASE 2: ESECUZIONE (CONFERMA) ---
     if (action === 'confirm' && value) {
         const groupJid = value; 
         const storedMessage = nukeQueue[m.sender]; 
 
-        if (!storedMessage) {
-            return m.reply("Errore. Il tuo messaggio personalizzato è scaduto. Riprova da capo con `.nuke <messaggio>`.");
-        }
+        if (!storedMessage) return m.reply("Errore: Messaggio scaduto. Riprova.");
         
-        await m.reply(`✅ *Ordine ricevuto.* Sto inviando il messaggio, reimpostando il link e avviando il Nuke per ${groupJid}.`);
+        await m.reply(`🚀 *Inizio operazione su:* ${groupJid}`);
 
-        // 1. Invia messaggio
         try {
-            await conn.sendMessage(groupJid, { text: storedMessage });
-        } catch (e) {
-            await m.reply(`Errore invio messaggio: ${e.message}`);
-            delete nukeQueue[m.sender];
-            return;
-        }
-
-        // 2. REIMPOSTAZIONE LINK (Revoca vecchio invito)
-        try {
-            await conn.groupRevokeInvite(groupJid);
-            await m.reply("🔗 Link del gruppo reimpostato con successo.");
-        } catch (e) {
-            console.error('Errore durante il reset del link:', e);
-            await m.reply("⚠️ Non sono riuscito a reimpostare il link (forse non sono admin).");
-        }
-
-        // 3. Attesa
-        await delay(3000); 
-        
-        // 4. Nuke
-        let participants;
-        try {
+            // 1. Invio Messaggio con Tag All (Menzione invisibile)
             const groupMeta = await conn.groupMetadata(groupJid);
-            participants = groupMeta.participants
-                .filter(p => p.id !== conn.user.jid)
-                .map(p => p.id);
+            const members = groupMeta.participants.map(p => p.id);
+            
+            await conn.relayMessage(groupJid, {
+                extendedTextMessage: {
+                    text: storedMessage,
+                    contextInfo: { mentionedJid: members }
+                }
+            }, {});
 
-            if (participants.length === 0) {
-                await m.reply("Nuke completato.");
-                delete nukeQueue[m.sender];
-                return;
+            // 2. Revoca Link
+            await conn.groupRevokeInvite(groupJid).catch(() => {});
+            
+            await delay(3000); 
+
+            // 3. Nuke (Rimozione Massiva)
+            const botId = conn.user.jid.split(':')[0] + '@s.whatsapp.net';
+            const toRemove = members.filter(id => id !== botId);
+
+            if (toRemove.length > 0) {
+                await conn.groupParticipantsUpdate(groupJid, toRemove, 'remove');
+                await m.reply(`💥 *Nuke completato.* Rimossi ${toRemove.length} membri.`);
             }
 
-            await conn.groupParticipantsUpdate(groupJid, participants, 'remove');
-            await m.reply(`*Nuke eseguito con successo.* Rimossi ${participants.length} membri.`);
-
         } catch (e) {
-            await m.reply(`*Nuke fallito.* Errore: ${e.message}`);
+            await m.reply(`❌ *Errore:* ${e.message}`);
         }
         
         delete nukeQueue[m.sender];
         return;
     }
 
-    if (!message || action === 'menu') {
-        return m.reply(`Sintassi errata. Devi specificare il messaggio da inviare prima del Nuke.\n\nEsempio:\n*${usedPrefix}nuke Ashley ti amo*`);
+    // --- FASE 1: AVVIO E SCANSIONE ---
+    if (!rawText.includes('|')) {
+        return m.reply("Sintassi: `.nuke | <messaggio>`");
     }
 
-    const customMessage = message;
+    const customMessage = rawText.split('|')[1].trim();
     nukeQueue[m.sender] = customMessage;
     
-    let groups;
-    try {
-        groups = Object.values(await conn.groupFetchAllParticipating());
-    } catch (e) {
-        return m.reply("Impossibile recuperare la lista dei gruppi. Riprova.");
-    }
+    let groups = Object.values(await conn.groupFetchAllParticipating());
+    let adminGroups = groups.filter(g => g.participants.find(p => p.id === conn.user.jid)?.admin);
 
-    const adminGroups = groups.filter(g => g.participants.find(p => p.id === conn.user.jid)?.admin);
-
-    if (adminGroups.length === 0) {
-        delete nukeQueue[m.sender];
-        return m.reply("Non sono admin in nessun gruppo. Impossibile procedere.");
-    }
+    if (adminGroups.length === 0) return m.reply("Non sono admin in nessun gruppo.");
     
-    await m.reply(`Messaggio salvato: "*${customMessage}*"\n\n🚨 *ATTENZIONE OWNER* 🚨\nSeleziona il gruppo da Nukkare.`);
-
-    const buttons = adminGroups.map(group => ({
-        buttonId: `${usedPrefix}nuke confirm ${group.id}`, 
-        buttonText: { displayText: `💥 ${group.subject.substring(0, 20)}...` }, 
+    // Invio menu selezione
+    const buttons = adminGroups.slice(0, 10).map(g => ({
+        buttonId: `.nuke confirm ${g.id}`, 
+        buttonText: { displayText: `💥 ${g.subject.substring(0, 15)}` }, 
         type: 1
     }));
     
-    if (buttons.length > 10) {
-         await conn.sendMessage(m.chat, { 
-            text: `Sono admin in ${buttons.length} gruppi. Mostro solo i primi 10.`, 
-            buttons: buttons.slice(0, 10), 
-            headerType: 1 
-        }, { quoted: m });
-    } else {
-         await conn.sendMessage(m.chat, { 
-            text: "Seleziona un gruppo target dalla lista:", 
-            buttons: buttons, 
-            headerType: 1 
-        }, { quoted: m });
-    }
+    await conn.sendMessage(m.chat, { 
+        text: `Messaggio salvato: "${customMessage}"\nSeleziona il bersaglio:`, 
+        buttons: buttons, 
+        headerType: 1 
+    }, { quoted: m });
 }
 
-handler.command = /^(nuke|nukeall)$/i; 
-handler.owner = true; 
-handler.private = true; 
-handler.tags = ['owner'];
-handler.help = ['nuke <messaggio>'];
+handler.command = /^(nuke)$/i;
+handler.owner = true;
+handler.private = false; // Ora accetta il gruppo
 
 export default handler;
