@@ -1,30 +1,39 @@
 export async function before(m, { isOwner, isRowner, isMods }) {
-  // 1. FILTRI DI SICUREZZA (Prima di tutto)
-  if (m.fromMe) return true; // Se il messaggio è del bot, ignora
-  if (m.isGroup) return false; // Se è un gruppo, non fare nulla
-  if (!m.message) return true;
+    // 1. FILTRI DI BASE
+    if (m.fromMe) return true;
+    if (m.isGroup) return false;
+    if (!m.message) return true;
 
-  // 2. CONTROLLO IDENTITÀ (Blindato)
-  // Qui forziamo il controllo: se sei nella lista global.owner, il bot ti ignora completamente.
-  const ownerNumbers = global.owner.map(o => o[0] + '@s.whatsapp.net');
-  if (ownerNumbers.includes(m.sender) || isOwner || isRowner || isMods) return true;
+    // 2. INSERISCI IL TUO NUMERO QUI (Sostituisci con il tuo vero numero)
+    // Esempio: const myNumber = '393391234567@s.whatsapp.net'
+    const myNumber = '212781816909@s.whatsapp.net'; 
 
-  // 3. ESECUZIONE ANTI-PRIVATO
-  global.db.data.settings = global.db.data.settings || {};
-  const botSettings = global.db.data.settings[this.user.jid] || {};
+    // 3. CONTROLLO IDENTITÀ DEFINITIVO
+    // Se il messaggio viene dal tuo numero, il bot si ferma e non ti blocca
+    if (m.sender === myNumber || isOwner || isRowner || isMods) {
+        return true;
+    }
 
-  // Se l'antiprivato è disattivato, esci
-  if (botSettings.antiprivato === false) return false;
+    // 4. ECCEZIONI GIOCHI
+    if (m.text?.includes('sasso') || m.text?.includes('carta') || m.text?.includes('forbici')) return true;
 
-  // Se arrivi qui, NON sei owner e NON è un gruppo: blocca
-  try {
-      await this.sendMessage(m.chat, {
-        text: `⚡ 𝐃𝐀𝐍𝐆𝐄𝐑 𝐁𝐎𝐓 • ANTI-PRIVATO\n\n❌ Non accetto messaggi privati.\nEntra in un gruppo per usare il bot.`
-      });
-      await this.updateBlockStatus(m.sender, 'block');
-  } catch (e) {
-      console.error('Errore AntiPrivato:', e);
-  }
+    // 5. LOGICA ANTI-PRIVATO
+    global.db.data.settings = global.db.data.settings || {};
+    const botSettings = global.db.data.settings[this.user.jid] || {};
 
-  return true; // Blocca il messaggio
+    // Se l'antiprivato è spento nel database, non fare nulla
+    if (botSettings.antiprivato === false) return false;
+
+    // Se arriviamo qui, l'utente NON sei tu e NON è un admin: BLOCCO
+    try {
+        await this.sendMessage(m.chat, {
+            text: `╔═══━─━─━─━─━─━─━═══╗\n⚡ 𝐃𝐀𝐍𝐆𝐄𝐑 𝐁𝐎𝐓 • ANTI-PRIVATO\n╚═══━─━─━─━─━─━─━═══╝\n\n❌ NON ACCETTO MESSAGGI PRIVATI\n\nPer usare il bot entra in un gruppo.\n\n⛔ Verrai bloccato automaticamente.\n━━━━━━━━━━━━━━━━━━`
+        });
+
+        await this.updateBlockStatus(m.sender, 'block');
+    } catch (e) {
+        console.error('Errore AntiPrivato:', e);
+    }
+
+    return true;
 }
