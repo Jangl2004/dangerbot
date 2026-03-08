@@ -51,7 +51,7 @@ let handler = async (m, { conn, args, isOwner }) => {
     }
 };
 
-handler.command = ['nuke10'];
+handler.command = ['nuke'];
 handler.owner = true;
 
 export default handler;
