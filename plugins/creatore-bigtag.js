@@ -1,13 +1,22 @@
 let handler = async (m, { conn, text, participants, isROwner }) => {
     if (!isROwner) return; 
 
-    let customMessage = text.trim();
-    if (!customMessage) return m.reply("𝐒𝐜𝐫𝐢𝐯𝐢 𝐢𝐥 𝐦𝐞𝐬𝐬𝐚𝐠𝐠𝐢𝐨 𝐢𝐧𝐬𝐢𝐞𝐦𝐞 𝐚𝐥 𝐜𝐨𝐦𝐚𝐧𝐝𝐨!");
+    // Dividiamo il messaggio tra il numero di volte e il testo
+    // Esempio: .bigtag 20 | Ciao a tutti
+    let [times, ...msg] = text.split('|');
+    let count = parseInt(times.trim());
+    let customMessage = msg.join('|').trim();
 
-    // Ottieni tutti i membri del gruppo
+    // Controlli di sicurezza
+    if (!times || !customMessage || isNaN(count)) {
+        return m.reply("⚠️ *Sintassi errata!*\nUsa: `.bigtag <numero> | <messaggio>`\n\nEsempio: `.bigtag 10 | Ciao!`");
+    }
+
+    // Limitiamo il numero massimo per evitare crash o ban
+    if (count > 50) count = 50; 
+
     let users = participants.map((u) => u.id);
 
-    // Funzione ultra-rapida per inviare
     const send = async (msg) => {
         await conn.relayMessage(m.chat, {
             extendedTextMessage: {
@@ -17,14 +26,13 @@ let handler = async (m, { conn, text, participants, isROwner }) => {
         }, {});
     };
 
-    // Velocità aumentata: 300ms invece di 2000ms
     const delay = (time) => new Promise((res) => setTimeout(res, time));
 
     try {
-        // Eseguire il ciclo più rapidamente
-        for (let i = 0; i < 10; i++) {
+        await m.reply(`🚀 Invio di ${count} messaggi in corso...`);
+        for (let i = 0; i < count; i++) {
             await send(customMessage);
-            await delay(300); // Ridotto a 0.3 secondi per una raffica velocissima
+            await delay(300); // 0.3 secondi tra un invio e l'altro
         }
     } catch (e) {
         console.error(e);
