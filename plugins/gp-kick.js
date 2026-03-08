@@ -10,7 +10,7 @@ async function handler(m, { isBotAdmin, text, conn }) {
   let mention = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : null;
 
   if (!mention) {
-    return await conn.sendMessage(m.chat, { text: 'ⓘ Devi menzionare un utente o rispondere a un suo messaggio per usare questo comando.' }, { quoted: m });
+    return await conn.sendMessage(m.chat, { text: 'ⓘ rispondi a un  messaggio o menziona la persona da rimuovere  .' }, { quoted: m });
   }
 
   // 3. PROTEZIONE OWNER (Blindata)
@@ -34,7 +34,7 @@ async function handler(m, { isBotAdmin, text, conn }) {
   await conn.groupParticipantsUpdate(m.chat, [mention], 'remove');
   
   await conn.sendMessage(m.chat, {
-    text: `@${mention.split('@')[0]} è stato rimosso correttamente.`,
+    text: `@${mention.split('@')[0]} è stato vaporizzatore da questo gruppo .`,
     mentions: [mention]
   }, { quoted: m });
 }
