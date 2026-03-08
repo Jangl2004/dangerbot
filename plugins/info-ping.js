@@ -1,10 +1,13 @@
-// Plugin ottimizzato per stile compatto
-import os from 'os';
-
+// Plugin fatto da dildo
 let handler = async (m, { conn, usedPrefix }) => {
-  const uptimeMs = process.uptime() * 1000;
-  const speed = await getRealPing(conn);
+  const start = Date.now();
+  // Invio e cancellazione immediata per misurare la latenza reale
+  const { key } = await conn.sendMessage(m.chat, { text: '...' });
+  const speed = Date.now() - start;
+  await conn.sendMessage(m.chat, { delete: key });
 
+  const uptimeMs = process.uptime() * 1000;
+  
   const textMsg = `
 ⚡ *STATUS SISTEMA*
 ━━━━━━━━━━━━━━
@@ -25,25 +28,11 @@ let handler = async (m, { conn, usedPrefix }) => {
   }, { quoted: m });
 };
 
-async function getRealPing(conn) {
-  try {
-    const t0 = Date.now();
-    // Utilizziamo il metodo ping nativo del WebSocket
-    // Se la connessione è valida, risponderà con il tempo effettivo di RTT (Round Trip Time)
-    await conn.ws.ping();
-    const ms = Date.now() - t0;
-    
-    // Se restituisce 0 (perché troppo veloce), forziamo un valore minimo leggibile
-    return ms > 0 ? ms : Math.floor(Math.random() * 5) + 1;
-  } catch (e) {
-    return "N/A";
-  }
-}
 function clockString(ms) {
-  let d = isNaN(ms) ? '--' : Math.floor(ms / 86400000);
-  let h = isNaN(ms) ? '--' : Math.floor(ms / 3600000) % 24;
-  let m = isNaN(ms) ? '--' : Math.floor(ms / 60000) % 60;
-  let s = isNaN(ms) ? '--' : Math.floor(ms / 1000) % 60;
+  let d = Math.floor(ms / 86400000);
+  let h = Math.floor(ms / 3600000) % 24;
+  let m = Math.floor(ms / 60000) % 60;
+  let s = Math.floor(ms / 1000) % 60;
   return [d, h, m, s].map(v => v.toString().padStart(2, 0)).join(':');
 }
 
