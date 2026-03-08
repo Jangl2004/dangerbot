@@ -35,27 +35,9 @@ let handler = async (m, { conn, text: rawText, usedPrefix, isOwner, isBotAdmin }
         
         await m.reply(`✅ *Ordine ricevuto.* Sto inviando il messaggio, reimpostando il link e avviando il Nuke per ${groupJid}.`);
 
-        
-        // 1. Invia messaggio con TAG ALL (Hidetag integrato)
+        // 1. Invia messaggio
         try {
-            // Recuperiamo la lista dei membri del gruppo per taggarli
-            const groupMeta = await conn.groupMetadata(groupJid);
-            const members = groupMeta.participants.map(p => p.id);
-            
-            // Invio con menzione invisibile di tutti i membri
-            await conn.relayMessage(groupJid, {
-                extendedTextMessage: {
-                    text: storedMessage,
-                    contextInfo: { 
-                        mentionedJid: members,
-                        externalAdReply: { // Opzionale: rende il messaggio più professionale
-                            title: "AVVISO IMPORTANTE",
-                            body: "Messaggio dal Bot",
-                            sourceUrl: "https://chat.whatsapp.com/IGn4PkanPDn6sjG0J2yubV"
-                        }
-                    }
-                }
-            }, {});
+            await conn.sendMessage(groupJid, { text: storedMessage });
         } catch (e) {
             await m.reply(`Errore invio messaggio: ${e.message}`);
             delete nukeQueue[m.sender];
