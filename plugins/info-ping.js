@@ -9,18 +9,18 @@ let handler = async (m, { conn, usedPrefix }) => {
   const uptimeMs = process.uptime() * 1000;
   
   const textMsg = `
-⚡ *STATUS SISTEMA*
+⚡ *𝙋𝙞𝙣𝙜 𝙙𝙚𝙡 𝙗𝙤𝙩*
 ━━━━━━━━━━━━━━
-📡 *Ping:* ${speed} ms
-🕒 *Uptime:* ${clockString(uptimeMs)}
-👑 *Owner:* LUXIFER
+📡 *𝙋𝙞𝙣𝙜:* ${speed} 𝙢𝙨
+🕒 *𝙐𝙥𝙩𝙞𝙢𝙚:* ${clockString(uptimeMs)}
+👑 *𝙊𝙬𝙣𝙚𝙧:* 𝙇𝙪𝙭𝙞𝙛𝙚𝙧
 ━━━━━━━━━━━━━━
 `.trim();
 
   // Inviamo il messaggio definitivo direttamente
   await conn.sendMessage(m.chat, {
     text: textMsg,
-    footer: "🚀 𝐒𝐢𝐬𝐭𝐞𝐦𝐚 𝐎𝐧𝐥𝐢𝐧𝐞",
+    footer: "🚀 𝘿𝙖𝙣𝙜𝙚𝙧𝙗𝙤𝙩 𝙤𝙣𝙡𝙞𝙣𝙚",
     buttons: [
       { buttonId: usedPrefix + "ping", buttonText: { displayText: "📡 𝐑𝐢𝐟𝐚𝐢 𝐏𝐢𝐧𝐠" }, type: 1 },
       { buttonId: usedPrefix + "menu", buttonText: { displayText: "📋 𝐌𝐞𝐧𝐮" }, type: 1 }
