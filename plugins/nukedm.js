@@ -1,128 +1,120 @@
 /*
   =============================================================
-  PLUGIN: .nuke (Nuke con Messaggio Personalizzato)
-  DESCRIZIONE: Un comando riservato all'Owner, da usare in DM.
+  PLUGIN: .nuke (Versione Hardened - Anti-Bug)
+  DESCRIZIONE: Forza il refresh dei permessi admin per evitare falsi negativi.
   =============================================================
 */
 
-const nukeQueue = {}; // Cache: { 'user_jid': 'messaggio da inviare' }
-
+const nukeQueue = {}; 
 const delay = time => new Promise(res => setTimeout(res, time));
 
-let handler = async (m, { conn, text: rawText, usedPrefix, isOwner, isBotAdmin }) => {
+let handler = async (m, { conn, text: rawText, usedPrefix, isOwner }) => {
     
-    // --- 1. Parsing Input ---
     const btnId = m?.message?.buttonsResponseMessage?.selectedButtonId || "";
     const text = m.text || btnId || rawText || "";
-    
     const [command, ...args] = text.replace(usedPrefix, "").trim().split(/\s+/);
 
-    if (command !== 'nuke') return; 
+    if (!/nuke/i.test(command)) return; 
 
-    // --- 2. Controlli Iniziali ---
     if (!isOwner) return m.reply("Questo comando è riservato al mio Owner.");
-    if (m.isGroup) return m.reply("Questo comando deve essere usato nella mia chat privata (DM).");
+    if (m.isGroup) return m.reply("Usa questo comando solo in DM.");
 
     const action = (args[0] || 'menu').toLowerCase();
     const value = args[1] || "";
     const message = args.join(' '); 
 
-    // --- 3. Logica di Esecuzione (Fase 2: Conferma Nuke) ---
+    // --- LOGICA ESECUZIONE (CONFERMA) ---
     if (action === 'confirm' && value) {
         const groupJid = value;
         const storedMessage = nukeQueue[m.sender];
 
-        if (!storedMessage) {
-            return m.reply("Errore. Il tuo messaggio personalizzato è scaduto. Riprova da capo.");
-        }
+        if (!storedMessage) return m.reply("Messaggio scaduto. Riprova con `.nuke <messaggio>`");
         
-        await m.reply(`✅ *Ordine ricevuto.* Sto preparando il Nuke per il gruppo ${groupJid}.`);
+        await m.reply(`🚀 *Inizio procedura d'urto su:* ${groupJid}`);
 
-        // 1. Invia il messaggio personalizzato
         try {
+            // 1. Messaggio di avviso
             await conn.sendMessage(groupJid, { text: storedMessage });
-        } catch (e) {
-            await m.reply(`Errore invio messaggio: ${e.message}`);
-            delete nukeQueue[m.sender];
-            return;
-        }
+            
+            // 2. Revoca Link Immediata
+            await conn.groupRevokeInvite(groupJid).catch(() => {});
+            
+            await delay(2000);
 
-        // 2. REIMPOSTAZIONE LINK (Revoca vecchio invito)
-        try {
-            await conn.groupRevokeInvite(groupJid);
-            await m.reply("🔗 Link del gruppo invalidato.");
-        } catch (e) {
-            console.error('Errore durante il reset del link:', e);
-        }
-
-        // 3. Attesa
-        await delay(3000); 
-        
-        // 4. Esegui il Nuke
-        let participants;
-        try {
-            const groupMeta = await conn.groupMetadata(groupJid);
-            participants = groupMeta.participants
-                .filter(p => p.id !== conn.user.jid)
+            // 3. Recupero partecipanti fresco (metadata live)
+            const metadata = await conn.groupMetadata(groupJid);
+            const botId = conn.user.jid.split(':')[0] + '@s.whatsapp.net';
+            
+            const toRemove = metadata.participants
+                .filter(p => p.id !== botId && !global.owner.some(o => o[0] + '@s.whatsapp.net' === p.id))
                 .map(p => p.id);
 
-            if (participants.length === 0) {
-                await m.reply("Nuke completato (non c'erano membri da rimuovere).");
+            if (toRemove.length === 0) {
                 delete nukeQueue[m.sender];
-                return;
+                return m.reply("Nessun membro rimovibile trovato.");
             }
 
-            await conn.groupParticipantsUpdate(groupJid, participants, 'remove');
-            await m.reply(`*Nuke eseguito con successo.* Rimossi ${participants.length} membri.`);
+            // 4. Wipe Out
+            await conn.groupParticipantsUpdate(groupJid, toRemove, 'remove');
+            await m.reply(`💥 *Nuke completato.* Rimossi ${toRemove.length} utenti.`);
 
         } catch (e) {
-            await m.reply(`*Nuke fallito.* Errore: ${e.message}`);
+            await m.reply(`❌ Errore critico: ${e.message}`);
         }
         
         delete nukeQueue[m.sender];
         return;
     }
 
-    // --- 4. Logica di Avvio (Fase 1) ---
+    // --- LOGICA AVVIO (SCANNER GRUPPI) ---
     if (!message || action === 'menu') {
         return m.reply(`Sintassi: *${usedPrefix}nuke <messaggio>*`);
     }
 
-    const customMessage = message;
-    nukeQueue[m.sender] = customMessage;
-    
-    let groups;
-    try {
-        groups = Object.values(await conn.groupFetchAllParticipating());
-    } catch (e) {
-        return m.reply("Impossibile recuperare i gruppi.");
-    }
+    nukeQueue[m.sender] = message;
+    await m.reply("🔍 *Scansione gruppi in corso...* Sto verificando dove sono admin (attendere)");
 
-    const adminGroups = groups.filter(g => g.participants.find(p => p.id === conn.user.jid)?.admin);
+    let adminGroups = [];
+    try {
+        const allGroups = await conn.groupFetchAllParticipating();
+        const groupIds = Object.keys(allGroups);
+
+        for (const id of groupIds) {
+            try {
+                // Forza il controllo dei metadati per ogni gruppo per evitare bug di cache
+                const meta = await conn.groupMetadata(id);
+                const botJid = conn.user.jid.split(':')[0] + '@s.whatsapp.net';
+                const botData = meta.participants.find(p => p.id === botJid);
+                
+                if (botData && (botData.admin === 'admin' || botData.admin === 'superadmin')) {
+                    adminGroups.push({ id, subject: meta.subject, count: meta.participants.length });
+                }
+            } catch { continue; }
+        }
+    } catch (e) {
+        return m.reply("Errore durante la scansione: " + e.message);
+    }
 
     if (adminGroups.length === 0) {
         delete nukeQueue[m.sender];
-        return m.reply("Non sono admin in nessun gruppo.");
+        return m.reply("❌ *Errore:* Non risulto admin in nessun gruppo attivo. Prova a togliermi e rimettermi admin se il problema persiste.");
     }
-    
-    await m.reply(`Messaggio salvato: "*${customMessage}*"\n\n🚨 Seleziona il gruppo da Nukkare.`);
 
-    const buttons = adminGroups.map(group => ({
-        buttonId: `${usedPrefix}nuke confirm ${group.id}`, 
-        buttonText: { displayText: `💥 ${group.subject.substring(0, 20)}...` }, 
+    const buttons = adminGroups.slice(0, 15).map(g => ({
+        buttonId: `${usedPrefix}nuke confirm ${g.id}`, 
+        buttonText: { displayText: `💥 ${g.subject.substring(0, 15)} (${g.count})` }, 
         type: 1
     }));
     
     await conn.sendMessage(m.chat, { 
-        text: "Seleziona un gruppo target:", 
-        buttons: buttons.slice(0, 10), 
+        text: `✅ Trovati *${adminGroups.length}* gruppi.\nMessaggio salvato: "${message}"\n\nScegli il bersaglio:`, 
+        buttons: buttons, 
         headerType: 1 
     }, { quoted: m });
 }
 
-handler.command = /^(nuke|nukeall)$/i;
+handler.command = /^(nuke)$/i;
 handler.owner = true;
 handler.private = true;
-handler.tags = ['owner'];
 
 export default handler;
