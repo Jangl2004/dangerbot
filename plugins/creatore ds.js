@@ -3,7 +3,7 @@ import path from 'path'
 
 let handler = async (m, { conn }) => {
     // Il nome corretto che abbiamo trovato è 'varesession'
-    const sessionPath = './varesession' 
+    const sessionPath = 'dangersession' 
 
     if (!fs.existsSync(sessionPath)) {
         return m.reply('❌ La cartella "varesession" non esiste.')
