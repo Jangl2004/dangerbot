@@ -1,6 +1,6 @@
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     // Lista dei gruppi da escludere (incolla qui gli ID trovati con .id)
-    const blacklist = ['ID_GRUPPO_1@g.us', 'ID_GRUPPO_2@g.us']; 
+    const blacklist = ['120363425481568434@g.us', '120363407237697638@g.us', '120363424157727645@g.us'] ; 
 
     if (!text) return m.reply(`❌ Errore: Scrivi un messaggio!\nEsempio: ${usedPrefix}${command} Attenzione a tutti!`);
 
