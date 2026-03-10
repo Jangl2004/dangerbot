@@ -1,4 +1,4 @@
-//Credit by Dade -> github.com/realdxve
+import { WAMessageStubType } from 'baileys'
 
 function estraiJid(m, text = '') {
   let who = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null)
@@ -106,10 +106,22 @@ handler.before = async function (m, { conn, isBotAdmin, participants }) {
   chat.blacklist = chat.blacklist || []
 
   if (!chat.blacklist.length) return
-  if (![27, 31, 32].includes(m.messageStubType)) return
+  
+  const STUB_TYPES = {
+  ADD: WAMessageStubType.GROUP_PARTICIPANT_ADD,
+  LEAVE: WAMessageStubType.GROUP_PARTICIPANT_LEAVE,
+  REMOVE: WAMessageStubType.GROUP_PARTICIPANT_REMOVE,
+};
 
-  let users = m.messageStubParameters || []
-  if (!users.length) return
+const isAdd = m.messageStubType === STUB_TYPES.ADD
+const isRemove = m.messageStubType === STUB_TYPES.LEAVE || m.messageStubType === STUB_TYPES.REMOVE
+
+let users = m.messageStubParameters || []
+if (!users.length) return
+
+if ((isAdd || isRemove) && users.some(u => chat.blacklist.includes(u))) {
+  return
+}
 
   const botJid = conn.user?.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
   const owners = (global.owner || []).map(v => {
@@ -143,14 +155,8 @@ handler.before = async function (m, { conn, isBotAdmin, participants }) {
   }
 }
 
-handler.help = [
-  'blacklist @utente',
-  'blacklist numero',
-  'whitelist @utente',
-  'whitelist numero',
-  'blacklistlist'
-]
-handler.tags = ['group']
+handler.help = ['blacklist @utente', 'blacklist numero', 'whitelist @utente', 'whitelist numero', 'blacklistlist']
+handler.tags = ['gruppo']
 handler.command = /^(blacklist|listanera|whitelist|unblacklist|blacklistlist|listablack|listaneraall)$/i
 handler.group = true
 
