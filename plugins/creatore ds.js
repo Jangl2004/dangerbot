@@ -1,25 +1,24 @@
 import fs from 'fs'
 import path from 'path'
 
-let handler = async (m, { conn }) => {
-    // Il nome corretto che abbiamo trovato è 'varesession'
-    const sessionPath = 'dangersession' 
+// Qui imposti il percorso, ma non verrà mostrato in chat
+const SESSION_DIR = './varesession' 
 
-    if (!fs.existsSync(sessionPath)) {
-        return m.reply('❌ La cartella "varesession" non esiste.')
+let handler = async (m, { conn }) => {
+    
+    if (!fs.existsSync(SESSION_DIR)) {
+        return m.reply('❌ Errore: Cartella sessione non trovata.')
     }
 
     try {
-        const files = await fs.promises.readdir(sessionPath)
+        const files = await fs.promises.readdir(SESSION_DIR)
         let deletedCount = 0
 
         for (const file of files) {
-            // Non cancelliamo creds.json per mantenere il login attivo
             if (file !== 'creds.json') {
-                const filePath = path.join(sessionPath, file)
+                const filePath = path.join(SESSION_DIR, file)
                 const stat = await fs.promises.stat(filePath)
                 
-                // Eliminiamo solo i file (non sottocartelle)
                 if (stat.isFile()) {
                     await fs.promises.unlink(filePath)
                     deletedCount++
@@ -27,7 +26,8 @@ let handler = async (m, { conn }) => {
             }
         }
 
-        m.reply(`✅ Pulizia completata!\n\nCartella: *${sessionPath}*\nEliminati: *${deletedCount}* file inutili.\n\nIl bot è ora pulito e pronto! 🚀`)
+        // Messaggio personalizzato e senza percorsi sensibili
+        m.reply(`✅ Pulizia sessioni completata!\n\nSono stati rimossi *${deletedCount}* file temporanei inutilizzati. Il bot è ora ottimizzato. 🚀`)
         
     } catch (err) {
         console.error(err)
