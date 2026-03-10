@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
 
-// Qui imposti il percorso, ma non verrà mostrato in chat
 const SESSION_DIR = './varesession' 
 
 let handler = async (m, { conn }) => {
@@ -26,8 +25,17 @@ let handler = async (m, { conn }) => {
             }
         }
 
-        // Messaggio personalizzato e senza percorsi sensibili
-        m.reply(`✅ Pulizia sessioni completata!\n\nSono stati rimossi *${deletedCount}* file temporanei inutilizzati. Il bot è ora ottimizzato. 🚀`)
+        // Creazione del messaggio con bottone
+        let text = `✅ Pulizia completata!\n\nRimossi *${deletedCount}* file temporanei. Il bot è ora ottimizzato. 🚀`
+        
+        await conn.sendMessage(m.chat, {
+            text: text,
+            footer: 'System Cleanup',
+            buttons: [
+                { buttonId: '.ds', buttonText: { displayText: '🔄 Rifai DS' }, type: 1 }
+            ],
+            headerType: 1
+        }, { quoted: m })
         
     } catch (err) {
         console.error(err)
