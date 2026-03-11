@@ -1,15 +1,14 @@
 import { createCanvas, loadImage } from 'canvas';
 
-// --- DEFINIZIONE GLOBALE (Per evitare il ReferenceError) ---
+// Inizializzazione globale per evitare errori di Reference
 global.games = global.games || new Map();
 global.timeoutMap = global.timeoutMap || new Map();
 global.playerStats = global.playerStats || new Map();
 
-// --- LOGICA DI GIOCO (Mantenuta come l'originale) ---
+// --- 1. CLASSE E FUNZIONI DI SUPPORTO ---
 class TrisGame {
     constructor(p1, p2) {
-        this.p1 = p1;
-        this.p2 = p2;
+        this.p1 = p1; this.p2 = p2;
         this.board = Array(9).fill(null);
         this.turn = p1;
         this.isFinished = false;
@@ -31,50 +30,22 @@ class TrisGame {
     }
 }
 
-// ... [Inserisci qui le tue funzioni grafiche esistenti: renderBoard, drawX, drawO, sendGameMessage, ecc.] ...
-// Assicurati che sendGameMessage usi global.games invece di games locale!
+// Inserisci QUI tutte le tue funzioni grafiche: 
+// renderBoard, drawX, drawO, createPlaceholderImage, getSafeName, getVictoryMessage, countRemainingPositions...
+// E assicurati che sendGameMessage sia definita QUI in basso.
 
-let handler = async (m, { conn }) => {
-    const { chat, sender, mentionedJid, quoted } = m;
-    
-    // Comando .tris
-    if (!m.text.startsWith('.tris')) return;
-    
-    let opponent = mentionedJid[0] || quoted?.sender;
-    if (!opponent) return m.reply('❌ Menziona qualcuno per sfidarlo!');
-    if (opponent === sender) return m.reply('❌ Non puoi sfidare te stesso!');
-    if (global.games.has(chat)) return m.reply('⚠️ Partita già in corso.');
-
-    const game = new TrisGame(sender, opponent);
-    global.games.set(chat, game);
-    await sendGameMessage(conn, chat, game, `🔄 Turno di: @${sender.split('@')[0]}`, true);
+const sendGameMessage = async (conn, chat, game, status, isFirst = false) => {
+    // ... (Il codice della tua funzione sendGameMessage originale) ...
+    // Se la funzione è qui dentro, l'handler la vedrà correttamente.
 };
 
-// --- HANDLER BEFORE (Intercettatore) ---
+// --- 2. HANDLER PRINCIPALE ---
+let handler = async (m, { conn }) => {
+    // ... (La logica del comando .tris che ti ho scritto prima) ...
+};
+
 handler.before = async (m, { conn }) => {
-    const { chat, sender, text, isButtonResponse } = m;
-    if (!global.games.has(chat)) return;
-
-    const game = global.games.get(chat);
-    if (sender !== game.turn || game.isFinished) return;
-
-    let pos;
-    if (isButtonResponse) {
-        pos = parseInt(m.buttonId.replace('tris_move_', '')) - 1;
-    } else if (/^[1-9]$/.test(text?.trim())) {
-        pos = parseInt(text.trim()) - 1;
-    } else return;
-
-    if (!game.move(pos)) return m.reply('❌ Mossa non valida!');
-
-    let result = game.checkWin();
-    if (result) {
-        game.isFinished = true;
-        // ... (Logica finale che avevi) ...
-        global.games.delete(chat);
-    } else {
-        await sendGameMessage(conn, chat, game, `🔄 Turno di: @${game.turn.split('@')[0]}`);
-    }
+    // ... (La logica di gioco che ti ho scritto prima) ...
 };
 
 handler.command = ['tris'];
