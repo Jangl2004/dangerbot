@@ -1,46 +1,34 @@
-// Database fittizio (usa un file JSON o MongoDB per persistenza)
-let userStats = {}; 
+let userStats = {}; // In un bot reale, questo andrebbe salvato su un database JSON
 
-client.on('message', async (msg) => {
-    const chat = await msg.getChat();
-    const userId = msg.author || msg.from;
-    const groupId = chat.id._serialized;
+const handler = async (m, { conn }) => {
+    const userId = m.sender;
+    const chat = m.chat;
     const now = Date.now();
 
-    // Inizializza i dati per il gruppo/utente se non esistono
-    if (!userStats[groupId]) userStats[groupId] = {};
-    if (!userStats[groupId][userId]) {
-        userStats[groupId][userId] = {
-            firstSeen: now,
-            lastSeen: now,
-            totalTime: 0
-        };
+    // Inizializzazione dati
+    if (!userStats[chat]) userStats[chat] = {};
+    if (!userStats[chat][userId]) {
+        userStats[chat][userId] = { firstSeen: now, lastSeen: now, totalTime: 0 };
     }
 
-    // Aggiorna l'ultimo momento di attività
-    const userData = userStats[groupId][userId];
-    userData.lastSeen = now;
-    
-    // Calcola il tempo trascorso dall'inizio della sessione odierna
-    userData.totalTime = userData.lastSeen - userData.firstSeen;
+    // Aggiornamento
+    let user = userStats[chat][userId];
+    user.lastSeen = now;
+    user.totalTime = user.lastSeen - user.firstSeen;
 
-    // Comando .tempo
-    if (msg.body === '.tempo') {
-        const totalSeconds = Math.floor(userData.totalTime / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
+    if (m.text.startsWith('.tempo')) {
+        const totalSeconds = Math.floor(user.totalTime / 1000);
+        const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+        const m_ = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+        const s = (totalSeconds % 60).toString().padStart(2, '0');
 
-        // Formattazione tempo tipo 00:00:00
-        const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        let caption = `🕒 *Tempo Online Oggi*\n`;
+        caption += `👤 @${userId.split('@')[0]}\n`;
+        caption += `⏱️ *${h}:${m_}:${s}*`;
 
-        const response = `
-🕒 *Tempo Online Oggi*
-👤 @${userId.split('@')[0]}
-⏱️ ${timeString}
-📈 Posizione: Da implementare*
-        `.trim();
-
-        await chat.sendMessage(response, { mentions: [userId] });
+        await conn.sendMessage(chat, { text: caption, mentions: [userId] }, { quoted: m });
     }
-});
+};
+
+handler.command = /^(tempo)$/i; // Riconosce il comando .tempo
+export default handler;
