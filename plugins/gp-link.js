@@ -1,35 +1,32 @@
 const handler = async (m, { conn }) => {
-  if (!m.isGroup) return m.reply('☠️ Questo comando funziona solo nei gruppi.');
-
-  // Metadata del gruppo
-  const metadata = await conn.groupMetadata(m.chat);
-  const participants = metadata.participants || [];
-
-  // Conteggio admin (senza tag)
-  const totalAdmins = participants.filter(p => p.admin).length;
-
-  // Conteggio membri
-  const totalMembers = participants.length;
-
-  // Invite link
+  // 1. Recupero del link d'invito
   let inviteCode;
   try {
     inviteCode = await conn.groupInviteCode(m.chat);
   } catch {
-    inviteCode = null;
+    return m.reply('⚠️ Errore: Assicurati che il bot sia Admin.');
   }
 
-  const caption = `
-👥 *Membri:* ${totalMembers}
-🛡️ *Admin:* ${totalAdmins}
-🆔 *ID Gruppo:* ${m.chat}
+  const groupLink = `https://chat.whatsapp.com/${inviteCode}`;
 
-🔗 *Link gruppo:*
-${inviteCode ? 'https://chat.whatsapp.com/' + inviteCode : '⚠️ Non disponibile'}
+  // 2. Testo neutro con font stilizzato (Chrome Style)
+  const caption = `
+*DANGER BOT* 
+${groupLink}
 `.trim();
 
+  // 3. Invio del messaggio con il tasto di copia (se supportato dalla tua versione di Baileys)
   await conn.sendMessage(m.chat, {
-    text: caption
+    text: caption,
+    contextInfo: {
+      externalAdReply: {
+        title: "LINK GRUPPO",
+        body: "Danger Bot System",
+        mediaType: 1,
+        renderLargerThumbnail: false,
+        sourceUrl: groupLink
+      }
+    }
   }, { quoted: m });
 };
 
