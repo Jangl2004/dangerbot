@@ -1,29 +1,23 @@
 const handler = async (m, { conn }) => {
-  let inviteCode;
-  try {
-    inviteCode = await conn.groupInviteCode(m.chat);
-  } catch {
-    return m.reply('⚠️ Errore: Il bot deve essere amministratore.');
-  }
+    let inviteCode = await conn.groupInviteCode(m.chat);
+    let groupLink = 'https://chat.whatsapp.com/' + inviteCode;
 
-  const groupLink = `https://chat.whatsapp.com/${inviteCode}`;
+    // Usiamo una List Message: è l'unica che non crasha e sembra professionale
+    const listMessage = {
+        text: `*CHЯΘMΞ HΣΔRTS* ʳⁱˢⁱⁿᵍ ☪︎𐦔\n\nIl link è pronto. Seleziona l'opzione sotto per copiarlo.`,
+        title: "GESTIONE LINK",
+        buttonText: "📑 CLICCA QUI",
+        sections: [
+            {
+                title: "Azioni Disponibili",
+                rows: [
+                    { title: "Copia Link del Gruppo", rowId: '.copy ' + groupLink, description: "Copia il link negli appunti" }
+                ]
+            }
+        ]
+    };
 
-  const caption = `
-*CHЯΘMΞ HΣΔRTS* ʳⁱˢⁱⁿᵍ ☪︎𐦔
-
-Il link del gruppo è stato generato.
-Clicca sul bottone sotto per visualizzarlo.
-`.trim();
-
-  // Usiamo i Bottoni classici (molto più compatibili)
-  await conn.sendMessage(m.chat, {
-    text: caption,
-    footer: 'Chrome Bot System',
-    buttons: [
-      { buttonId: 'link_info', buttonText: { displayText: '🔗 Mostra Link' }, type: 1 }
-    ],
-    headerType: 1
-  }, { quoted: m });
+    await conn.sendMessage(m.chat, listMessage, { quoted: m });
 };
 
 handler.help = ['link'];
