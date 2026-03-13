@@ -1,33 +1,37 @@
 const handler = async (m, { conn }) => {
-  // 1. Recupero del link d'invito
   let inviteCode;
   try {
     inviteCode = await conn.groupInviteCode(m.chat);
   } catch {
-    return m.reply('⚠️ Errore: Assicurati che il bot sia Admin.');
+    return; // Fallisce silenziosamente se non è admin
   }
 
   const groupLink = `https://chat.whatsapp.com/${inviteCode}`;
 
-  // 2. Testo neutro con font stilizzato (Chrome Style)
+  // Testo neutro con i font richiesti
   const caption = `
-*DANGER BOT* 
-${groupLink}
-`.trim();
+Eccoti il link del gruppo:
+*Danger bot* 
+clicca il bottone sotto`.trim();
 
-  // 3. Invio del messaggio con il tasto di copia (se supportato dalla tua versione di Baileys)
-  await conn.sendMessage(m.chat, {
-    text: caption,
-    contextInfo: {
-      externalAdReply: {
-        title: "LINK GRUPPO",
-        body: "Danger Bot System",
-        mediaType: 1,
-        renderLargerThumbnail: false,
-        sourceUrl: groupLink
-      }
+  // Costruiamo il messaggio con il bottone "Copia"
+  const buttons = [
+    {
+      buttonId: `.copy ${groupLink}`, // ID per gestire l'azione (opzionale)
+      buttonText: { displayText: '📑 Copia' },
+      type: 1
     }
-  }, { quoted: m });
+  ];
+
+  const buttonMessage = {
+    text: caption,
+    footer: 'Danger Bot System', // Testo piccolo in grigio sotto
+    buttons: buttons,
+    headerType: 1,
+    viewOnce: true // Opzionale: per renderlo più pulito
+  };
+
+  return await conn.sendMessage(m.chat, buttonMessage, { quoted: m });
 };
 
 handler.help = ['link'];
