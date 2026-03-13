@@ -1,38 +1,30 @@
-const handler = async (m, { conn }) => {
-  if (!m.isGroup) return m.reply('☠️ Questo comando funziona solo nei gruppi.');
+```js
+export default {
+    command: ['link', 'linkgroup'],
+    
+    async execute(m, { conn }) {
+        const metadata = await conn.groupMetadata(m.chat);
+        const groupName = metadata.subject;
 
-  // 1. Recupero dati gruppo
-  const metadata = await conn.groupMetadata(m.chat);
-  const totalAdmins = metadata.participants.filter(p => p.admin).length;
-  const totalMembers = metadata.participants.length;
-  
-  // 2. Recupero link
-  let inviteCode;
-  try {
-    inviteCode = await conn.groupInviteCode(m.chat);
-  } catch {
-    return m.reply('⚠️ Errore: Il bot deve essere Admin.');
-  }
-  const groupLink = 'https://chat.whatsapp.com/' + inviteCode;
+        const interactiveButtons = [
+            {
+                name: "cta_copy",
+                buttonParamsJson: JSON.stringify({
+                    display_text: "Copia",
+                    id: 'https://chat.whatsapp.com/' + await conn.groupInviteCode(m.chat),
+                    copy_code: 'https://chat.whatsapp.com/' + await conn.groupInviteCode(m.chat)
+                })
+            },
+        ];
 
-  // 3. Testo pulito ed estetico
-  const caption = `
-🔗 *LINK DEL GRUPPO*
+        const interactiveMessage = {
+            text: `*${groupName}*`,
+            title: "Eccoti il link del gruppo:",
+            footer: "clicca il bottone sotto",
+            interactiveButtons
+        };
 
-👥 *Membri:* ${totalMembers}
-🛡️ *Admin:* ${totalAdmins}
-
-${groupLink}
-`.trim();
-
-  // 4. Invio messaggio semplice (massima compatibilità)
-  await conn.sendMessage(m.chat, { text: caption }, { quoted: m });
+        await conn.sendMessage(m.chat, interactiveMessage, { quoted: m });
+    }
 };
-
-handler.help = ['link'];
-handler.tags = ['group'];
-handler.command = /^link$/i;
-handler.group = true;
-handler.botAdmin = true;
-
-export default handler;
+```
