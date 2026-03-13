@@ -18,7 +18,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     if (command === 'play') {
         let infoMsg = `┏━━━━━━━━━━━━━━━━━━━━┓\n`;
-        infoMsg += `   🎧  *𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓 𝐏𝐋𝐀𝐘𝐄𝐑* 🎧\n`;
+        infoMsg += `    🎧  *𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓 𝐏𝐋𝐀𝐘𝐄𝐑* 🎧\n`;
         infoMsg += `┗━━━━━━━━━━━━━━━━━━━━┛\n\n`;
         infoMsg += `◈ 📌 *𝗧𝗶𝘁𝗼𝗹𝗼:* ${vid.title}\n`;
         infoMsg += `◈ ⏱️ *𝗗𝘂𝗿𝗮𝘁𝗮:* ${vid.timestamp}\n\n`;
@@ -41,7 +41,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let downloadUrl = null;
     const isAudio = command === 'playaud';
 
-    // Recupero Link (stessa logica tua)
     try {
         let res = isAudio ? await fg.yta(url) : await fg.ytv(url);
         if (res && res.dl_url) downloadUrl = res.dl_url;
@@ -58,13 +57,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const inputPath = path.join(tmpDir, `input_${Date.now()}`);
     const outputPath = path.join(tmpDir, `output_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`);
 
-    // Scarichiamo il file fisicamente nella VPS
     const res = await fetch(downloadUrl);
     const arrayBuffer = await res.arrayBuffer();
     fs.writeFileSync(inputPath, Buffer.from(arrayBuffer));
 
     if (isAudio) {
-        // TRUCCO: Usiamo FFmpeg per convertire in MP3 standard a 128kbps (compatibile ovunque)
         await new Promise((resolve, reject) => {
             exec(`ffmpeg -i ${inputPath} -vn -ar 44100 -ac 2 -b:a 128k ${outputPath}`, (err) => {
                 if (err) reject(err);
@@ -73,22 +70,25 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         });
 
         await conn.sendMessage(m.chat, {
-            audio: fs.readFileSync(outputPath),
+            audio: { url: outputPath }, // Modifica: passaggio path
             mimetype: 'audio/mpeg',
             fileName: `${vid.title}.mp3`,
             ptt: false
         }, { quoted: m });
     } else {
         await conn.sendMessage(m.chat, {
-            video: fs.readFileSync(inputPath),
+            video: { url: inputPath }, // Modifica: passaggio path
             mimetype: 'video/mp4',
             caption: `✅ *𝐒𝐜𝐚𝐫𝐢𝐜𝐚𝐭𝐨 𝐝𝐚 𝐍𝚵𝑿𝐒𝐔𝐒 𝚩𝚯𝐓*`,
         }, { quoted: m });
     }
 
-    // Pulizia file temporanei
-    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+    // Pulizia file ritardata di 5 secondi per sicurezza
+    setTimeout(() => {
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+        if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+    }, 5000);
+
     await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
 
   } catch (e) {
