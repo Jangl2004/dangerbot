@@ -3,35 +3,42 @@ const handler = async (m, { conn }) => {
   try {
     inviteCode = await conn.groupInviteCode(m.chat);
   } catch {
-    return; // Fallisce silenziosamente se non è admin
+    return; // Fallisce se non è admin
   }
 
   const groupLink = `https://chat.whatsapp.com/${inviteCode}`;
 
-  // Testo neutro con i font richiesti
+  // Testo neutro con stile Chrome
   const caption = `
-Eccoti il link del gruppo:
 *Danger bot* 
-clicca il bottone sotto`.trim();
+clicca il bottone sotto
+`.trim();
 
-  // Costruiamo il messaggio con il bottone "Copia"
-  const buttons = [
-    {
-      buttonId: `.copy ${groupLink}`, // ID per gestire l'azione (opzionale)
-      buttonText: { displayText: '📑 Copia' },
-      type: 1
-    }
-  ];
-
-  const buttonMessage = {
+  // Struttura Interactive Message con tasto Copia Nativo
+  const message = {
+    viewOnce: true,
     text: caption,
-    footer: 'Danger Bot System', // Testo piccolo in grigio sotto
-    buttons: buttons,
-    headerType: 1,
-    viewOnce: true // Opzionale: per renderlo più pulito
+    footer: 'Danger Bot System',
+    nativeFlowMessage: {
+      buttons: [
+        {
+          name: "cta_copy",
+          buttonParamsJson: JSON.stringify({
+            display_text: "📑 Copia Link",
+            copy_code: groupLink // Questo è quello che viene copiato negli appunti
+          })
+        }
+      ]
+    }
   };
 
-  return await conn.sendMessage(m.chat, buttonMessage, { quoted: m });
+  return await conn.relayMessage(m.chat, {
+    viewOnceMessage: {
+      message: {
+        interactiveMessage: message
+      }
+    }
+  }, { quoted: m });
 };
 
 handler.help = ['link'];
