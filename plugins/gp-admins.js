@@ -1,36 +1,42 @@
-const handler = async (m, { conn, args }) => {
-  if (!m.isGroup) {
-    return m.reply('☠️ Questo rituale può essere evocato solo nei gruppi.')
-  }
+let handler = async (m, { conn, text }) => {
+  try {
+    let who;
 
-  const metadata = await conn.groupMetadata(m.chat)
-  const participants = metadata.participants
-  const admins = participants.filter(p => p.admin)
+    if (text && /^\d{7,15}$/.test(text)) {
+      who = text.replace(/\D/g, '') + '@s.whatsapp.net';
+    } else if (m.quoted) {
+      who = m.quoted.sender;
+    } else if (m.mentionedJid && m.mentionedJid.length > 0) {
+      who = m.mentionedJid[0];
+    } else {
+      who = m.fromMe ? conn.user.jid : m.sender;
+    }
 
-  // Creiamo una lista dove ogni admin ha un nome o un punto fermo
-  // Invece di scrivere @numero, scriviamo un punto o un carattere per ogni admin
-  // WhatsApp userà l'array 'mentions' per trasformare quei punti in tag
-  const adminMentions = admins.map(a => `⚔️ @${a.id.split('@')[0]}`).join('\n')
+    let name = await conn.getName(who);
 
-  const ritualMsg = args.length 
-    ? `\n📜 𝕄𝔼𝕊𝕊𝔸𝔾𝔾𝕀𝕆: ${args.join(' ')}\n` 
-    : ''
+    let pp;
+    try {
+      pp = await conn.profilePictureUrl(who, 'image');
+    } catch {
+      pp = null;
+    }
 
-  const text = `🩸 *Evocazione Amministratori*${ritualMsg}\n\n${adminMentions}`
+    if (!pp) {
+      await conn.reply(m.chat, `『 🚫 』 *${name} non ha una foto profilo.*`, m, fake);
+      return;
+    }
 
-  // NOTA: Se vuoi che i numeri non si vedano proprio, 
-  // devi cambiare 'adminMentions' sopra in:
-  // const adminMentions = admins.map(a => `⚔️`).join('\n')
-  
-  await conn.sendMessage(m.chat, {
-    text: text,
-    mentions: admins.map(a => a.id)
-  }, { quoted: m })
-}
+    await conn.sendFile(m.chat, pp, 'profile.jpg', `『 🖼️ 』 *Foto profilo di ${name}*`, m);
 
-handler.help = ['admins [messaggio]']
-handler.tags = ['group']
-handler.command = /^admins$/i
-handler.group = true
+  } catch (err) {
+    console.error('Errore nel comando .pfp:', err);
+    await conn.reply(m.chat, `${global.errore}`, m);
+  }
+};
 
-export default handler
+handler.help = ['pfp [@tag|reply|numero]'];
+handler.tags = ['gruppo'];
+handler.command = ['pfp', 'fotoprofilo', 'pic'];
+handler.admin = true;
+
+export default handler;
