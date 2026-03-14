@@ -5,27 +5,27 @@ const handler = async (m, { conn, args }) => {
 
   const metadata = await conn.groupMetadata(m.chat)
   const participants = metadata.participants
-
   const admins = participants.filter(p => p.admin)
 
-  // FIX: Otteniamo i nomi invece dei semplici numeri per la lista visibile
+  // Creazione lista tag pulita
   let adminMentions = ''
   for (let admin of admins) {
-    // Prova a prendere il nome registrato, altrimenti usa il pushname o il numero
-    let name = conn.getName(admin.id)
-    adminMentions += ` @${admin.id.split('@')[0]} (${name})\n`
+    // Usiamo il pushname se disponibile, altrimenti il nome registrato, altrimenti nulla
+    let name = conn.getName(admin.id) || ''
+    // Se il nome è uguale al numero (succede se non è in rubrica), lo lasciamo vuoto per non fare doppioni
+    let displayName = (name && !name.includes('@')) ? ` (${name})` : ''
+    
+    adminMentions += `⚔️ @${admin.id.split('@')[0]}${displayName}\n`
   }
 
-  // Costruisci messaggio
   const ritualMsg = args.length 
     ? `📜 𝕄𝔼𝕊𝕊𝔸𝔾𝔾𝕀𝕆: ${args.join(' ')}` 
     : ''
 
   const text = `
-🩸 Evocazione Amministratori
+🩸 *Evocazione Amministratori*
 ${ritualMsg}
 
-⚔️ 𝐀𝐦𝐦𝐢𝐧𝐢𝐬𝐭𝐫𝐚𝐭𝐨𝐫𝐢 Evocati:
 ${adminMentions}
 `.trim()
 
